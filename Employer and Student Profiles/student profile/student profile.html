@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Profile</title>
+  <link rel="stylesheet" href="student-theme.css">
+</head>
+<body>
+  <!-- Header Navigation -->
+  <header class="header">
+    <div>
+      <span class="brand">INTERN CONNECT</span>
+    </div>
+    <h1>STUDENT PROFILE</h1>
+    <nav>
+      <ul class="nav-menu">
+        <li>Dashboard</li>
+        <li>Browse Internships</li>
+        <li>My Applications</li>
+        <li>Profile</li>
+        <li>Log out</li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="profile-section">
+        <div class="profile-avatar">JK</div>
+        <div class="profile-name">John Kamau</div>
+        <div class="profile-description">
+          Computer Science student<br>
+          Strathmore University
+        </div>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li class="active">Personal Information</li>
+        <li>Resume & Documents</li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="content-card">
+        <h2 class="content-title">Personal Information</h2>
+        
+        <form>
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-input" value="John Kamau">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-input" value="johnkamau@gmail.com">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input type="tel" class="form-input" value="+254123456789">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Location</label>
+            <input type="text" class="form-input" value="Nairobi, Kenya">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">About Me</label>
+            <textarea class="form-textarea">Computer science student at Strathmore University with a passion for AI and Machine Learning looking for internship opportunities.</textarea>
+          </div>
+          
+          <button type="submit" class="save-button">Save changes</button>
+        </form>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
