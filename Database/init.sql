@@ -48,7 +48,7 @@ CREATE TABLE Internships (
     start_date DATE,
     end_date DATE,
     location VARCHAR(100),
-    is_active BOOLEAN DEFAULT TRUE,
+       BOOLEAN DEFAULT TRUE,
     posted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (employer_id) REFERENCES Employers(employer_id) ON DELETE CASCADE
