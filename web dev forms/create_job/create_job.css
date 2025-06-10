@@ -1,0 +1,197 @@
+:root {
+  --color-blue-900: oklch(37.9% 0.146 265.522);
+  --color-indigo-800: oklch(39.8% 0.195 277.366);
+  --color-purple-900: oklch(38.1% 0.176 304.987);
+  --color-cyan-300: oklch(86.5% 0.127 207.078);
+  --color-cyan-400: oklch(78.9% 0.154 211.53);
+  --color-cyan-500: oklch(71.5% 0.143 215.221);
+  --color-red-300: oklch(80.8% 0.114 19.571);
+  --color-red-400: oklch(70.4% 0.191 22.216);
+  --color-red-500: oklch(63.7% 0.237 25.331);
+  --color-white: #fff;
+  --color-black: #000;
+  --spacing: 0.25rem;
+  --container-md: 28rem;
+  --container-lg: 64rem;
+  --text-sm: 0.875rem;
+  --text-3xl: 1.875rem;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --blur-md: 12px;
+  --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --default-transition-duration: 500ms;
+  --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, ::after, ::before {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0 solid;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, var(--color-blue-900), var(--color-indigo-800), var(--color-purple-900));
+  color: var(--color-white);
+  position: relative;
+}
+
+/* Background Animation */
+.bg-svg, .bg-animation {
+  position: absolute;
+  opacity: 30%;
+  width: 100%;
+  height: 100%;
+  animation: float 8s ease-in-out infinite;
+  z-index: 0;
+  top: 0;
+  left: 0;
+}
+
+@keyframes float {
+  0%, 100% {
+      transform: translateY(0);
+  }
+  50% {
+      transform: translateY(-20px);
+  }
+}
+
+/* Header Styles */
+.centered-header {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+/* Navigation Styles */
+.nav, .nav-menu {
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(var(--blur-md));
+  padding: 0 2rem;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  list-style: none;
+}
+
+.nav {
+  gap: 0;
+}
+
+.nav-menu {
+  gap: 2rem;
+}
+
+.nav a, .nav-menu li {
+  color: var(--color-white);
+  text-decoration: none;
+  padding: 1rem 1.5rem;
+  display: block;
+  font-size: 1.1rem;
+  transition: all var(--default-transition-duration) var(--default-transition-timing-function);
+  cursor: pointer;
+  border-radius: var(--radius-lg);
+}
+
+.nav a:hover, .nav-menu li:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.nav a.active, .nav-menu li.active {
+  background-color: rgba(255, 255, 255, 0.2);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Form Styles */
+.form-section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  max-width: var(--container-md);
+  margin: 0 auto; /* Center the form */
+}
+
+.form-group {
+  margin-bottom: calc(var(--spacing) * 4);
+}
+
+.form-label {
+  font-size: 1rem;
+  color: var(--color-white);
+  margin-bottom: calc(var(--spacing) * 1);
+}
+
+.form-input, .form-textarea {
+  width: 100%;
+  padding: calc(var(--spacing) * 3);
+  border-radius: var(--radius-xl);
+  background-color: rgba(255, 255, 255, 0.2);
+  color: var(--color-white);
+  font-size: 1rem;
+  line-height: 1.5;
+  outline: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all var(--default-transition-duration) var(--default-transition-timing-function);
+}
+
+.form-input:focus, .form-textarea:focus {
+  box-shadow: 0 0 0 2px var(--color-cyan-400);
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Button Styles */
+.btn-group {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.btn {
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 4);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-cyan-400);
+  color: var(--color-white);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--default-transition-duration);
+}
+
+.btn:hover {
+  background-color: var(--color-cyan-500);
+}
+
+/* Footer Styles */
+.footer {
+  text-align: center;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--color-white);
+  position: relative;
+  bottom: 0;
+  width: 100%;
+}
+.centered-header {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+.btn-group {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}

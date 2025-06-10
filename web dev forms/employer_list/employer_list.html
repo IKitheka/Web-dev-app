@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intern Connect | Employers</title>
+  <link rel="stylesheet" href="employer.css "
+ 
+</head>
+<body>
+  <!-- Background -->
+  <svg class="bg-animation" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+    <path fill="url(#aurora-gradient)" d="M0,128L60,138.7C120,149,240,171,360,154.7C480,139,600,85,720,96C840,107,960,181,1080,197.3C1200,213,1320,171,1380,149.3L1440,128L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
+    <defs>
+      <linearGradient id="aurora-gradient" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#4f46e5"/>
+        <stop offset="50%" stop-color="#06b6d4"/>
+        <stop offset="100%" stop-color="#8b5cf6"/>
+      </linearGradient>
+    </defs>
+  </svg>
+  
+  <header class="header">EMPLOYER ACCOUNTS</header>
+  
+  <nav class="nav">
+    <a href="#">INTERN CONNECT</a>
+    <a href="#">Dashboard</a>
+    <a class="active" href="#">Employers</a>
+    <a href="#">Students</a>
+    <a href="#">Profile</a>
+    <a href="#" style="margin-left: auto;">Log out</a>
+  </nav>
+  
+  <div class="content">
+    <h1 class="welcome">Registered Employers</h1>
+    
+    <button class="btn btn-add" onclick="openAddModal()">+ Add New Employer</button>
+    
+    <div class="table-section">
+      <table class="apps-table" id="employersTable">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Email</th>
+            <th>Industry</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th>Date Registered</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="employersTableBody">
+          <!-- Employer rows will be dynamically generated here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- Add/Edit Employer Modal -->
+  <div id="employerModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2 class="form-heading" id="modalTitle">Add New Employer</h2>
+      
+      <form id="employerForm">
+        <div class="input-group">
+          <div class="input-container">
+            <input type="text" id="companyName" class="form-input" placeholder="Company Name" required>
+          </div>
+        </div>
+        
+        <div class="input-group">
+          <div class="input-container">
+            <input type="email" id="email" class="form-input" placeholder="Email Address" required>
+          </div>
+        </div>
+        
+        <div class="input-group">
+          <div class="input-container">
+            <select id="industry" class="form-input" required>
+              <option value="">Select Industry</option>
+              <option value="Technology">Technology</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Finance">Finance</option>
+              <option value="Agriculture">Agriculture</option>
+              <option value="Manufacturing">Manufacturing</option>
+              <option value="Education">Education</option>
+              <option value="Retail">Retail</option>
+              <option value="Construction">Construction</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="input-group">
+          <div class="input-container">
+            <input type="tel" id="phone" class="form-input" placeholder="Phone Number" required>
+          </div>
+        </div>
+        
+        <div class="input-group">
+          <div class="input-container">
+            <select id="status" class="form-input" required>
+              <option value="">Select Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="input-group">
+          <div class="input-container">
+            <input type="text" id="address" class="form-input" placeholder="Company Address">
+          </div>
+        </div>
+        
+        <div class="input-group">
+          <div class="input-container">
+            <input type="url" id="website" class="form-input" placeholder="Company Website (optional)">
+          </div>
+        </div>
+        
+        <input type="hidden" id="employerId">
+        
+        <div class="form-actions">
+          <button type="submit" class="btn btn-submit" id="submitBtn">Add Employer</button>
+          <button type="button" class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <footer class="footer">Intern Connect &copy; 2025 | All Rights Reserved</footer>
+
+  <script>
+    // Sample employer data
+    let employers = [
+      {
+        id: 1,
+        company: "TechNova Inc.",
+        email: "contact@technova.com",
+        industry: "Technology",
+        phone: "555-123-4567",
+        status: "Approved",
+        dateRegistered: "20/05/2025",
+        address: "123 Tech Street, Silicon Valley, CA",
+        website: "https://technova.com"
+      },
+      {
+        id: 2,
+        company: "GreenFields Ltd.",
+        email: "hr@greenfields.com",
+        industry: "Agriculture", 
+        phone: "555-234-5678",
+        status: "Pending",
+        dateRegistered: "18/05/2025",
+        address: "456 Farm Road, Rural County, TX",
+        website: "https://greenfields.com"
+      },
+      {
+        id: 3,
+        company: "MediCare Solutions",
+        email: "info@medicaresolv.com",
+        industry: "Healthcare",
+        phone: "555-345-6789",
+        status: "Approved",
+        dateRegistered: "15/05/2025",
+        address: "789 Health Ave, Medical District, NY",
+        website: ""
+      }
+    ];
+    
+    let nextId = 4;
+    let editingId = null;
+    
+    // Load employers on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      loadEmployers();
+    });
+    
+    function loadEmployers() {
+      const tableBody = document.getElementById('employersTableBody');
+      tableBody.innerHTML = '';
+      
+      employers.forEach(employer => {
+        const row = createEmployerRow(employer);
+        tableBody.appendChild(row);
+      });
+    }
+    
+    function createEmployerRow(employer) {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${employer.company}</td>
+        <td>${employer.email}</td>
+        <td>${employer.industry}</td>
+        <td>${employer.phone}</td>
+        <td><span class="status-${employer.status.toLowerCase()}">${employer.status}</span></td>
+        <td>${employer.dateRegistered}</td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn btn-edit" onclick="editEmployer(${employer.id})">Edit</button>
+            <button class="btn btn-delete" onclick="deleteEmployer(${employer.id})">Delete</button>
+            <button class="btn btn-deactivate" onclick="toggleStatus(${employer.id})">${employer.status === 'Active' || employer.status === 'Approved' ? 'Deactivate' : 'Activate'}</button>
+          </div>
+        </td>
+      `;
+      return row;
+    }
+    
+    function openAddModal() {
+      editingId = null;
+      document.getElementById('modalTitle').textContent = 'Add New Employer';
+      document.getElementById('submitBtn').textContent = 'Add Employer';
+      document.getElementById('employerForm').reset();
+      document.getElementById('employerModal').style.display = 'block';
+    }
+    
+    function editEmployer(id) {
+      const employer = employers.find(emp => emp.id === id);
+      if (!employer) return;
+      
+      editingId = id;
+      document.getElementById('modalTitle').textContent = 'Edit Employer';
+      document.getElementById('submitBtn').textContent = 'Update Employer';
+      
+      // Populate form with employer data
+      document.getElementById('companyName').value = employer.company;
+      document.getElementById('email').value = employer.email;
+      document.getElementById('industry').value = employer.industry;
+      document.getElementById('phone').value = employer.phone;
+      document.getElementById('status').value = employer.status;
+      document.getElementById('address').value = employer.address || '';
+      document.getElementById('website').value = employer.website || '';
+      document.getElementById('employerId').value = employer.id;
+      
+      document.getElementById('employerModal').style.display = 'block';
+    }
+    
+    function deleteEmployer(id) {
+      if (confirm('Are you sure you want to delete this employer? This action cannot be undone.')) {
+        employers = employers.filter(emp => emp.id !== id);
+        loadEmployers();
+        alert('Employer deleted successfully!');
+      }
+    }
+    
+    function toggleStatus(id) {
+      const employer = employers.find(emp => emp.id === id);
+      if (!employer) return;
+      
+      const currentStatus = employer.status;
+      let newStatus;
+      
+      if (currentStatus === 'Approved' || currentStatus === 'Active') {
+        newStatus = 'Inactive';
+      } else {
+        newStatus = 'Approved';
+      }
+      
+      if (confirm(`Are you sure you want to ${newStatus === 'Inactive' ? 'deactivate' : 'activate'} this employer?`)) {
+        employer.status = newStatus;
+        loadEmployers();
+        alert(`Employer ${newStatus === 'Inactive' ? 'deactivated' : 'activated'} successfully!`);
+      }
+    }
+    
+    function closeModal() {
+      document.getElementById('employerModal').style.display = 'none';
+      document.getElementById('employerForm').reset();
+      editingId = null;
+    }
+    
+    // Handle form submission
+    document.getElementById('employerForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const formData = {
+        company: document.getElementById('companyName').value,
+        email: document.getElementById('email').value,
+        industry: document.getElementById('industry').value,
+        phone: document.getElementById('phone').value,
+        status: document.getElementById('status').value,
+        address: document.getElementById('address').value,
+        website: document.getElementById('website').value
+      };
+      
+      // Validate required fields
+      if (!formData.company || !formData.email || !formData.industry || !formData.phone || !formData.status) {
+        alert('Please fill in all required fields.');
+        return;
+      }
+      
+      if (editingId) {
+        // Update existing employer
+        const employerIndex = employers.findIndex(emp => emp.id === editingId);
+        if (employerIndex !== -1) {
+          employers[employerIndex] = {
+            ...employers[employerIndex],
+            ...formData
+          };
+          alert('Employer updated successfully!');
+        }
+      } else {
+        // Add new employer
+        const newEmployer = {
+          id: nextId++,
+          ...formData,
+          dateRegistered: new Date().toLocaleDateString('en-GB')
+        };
+        employers.push(newEmployer);
+        alert('Employer added successfully!');
+      }
+      
+      loadEmployers();
+      closeModal();
+    });
+    
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('employerModal');
+      if (event.target === modal) {
+        closeModal();
+      }
+    }
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        closeModal();
+      }
+    });
+  </script>
+</body>
+</html>

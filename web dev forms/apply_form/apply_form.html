@@ -1,0 +1,193 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Employer Accounts</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="apply_form.css">
+ 
+
+</head>
+<body>
+  <div id="wave-gradient" aria-hidden="true"></div>
+
+  <header class="bg-[#6f7ed9cc] backdrop-blur-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 class="text-white font-extrabold text-center text-lg sm:text-xl md:text-2xl py-4 select-none">
+        EMPLOYER ACCOUNTS
+      </h1>
+      <nav class="flex items-center justify-between text-white text-sm sm:text-base font-normal">
+        <ul class="flex space-x-6">
+          <li>
+            <a href="#" class="hover:underline">INTERN CONNECT</a>
+          </li>
+          <li>
+            <a href="#" class="hover:underline">Dashboard</a>
+          </li>
+          <li>
+            <a href="#" class="bg-[#7a7ed9cc] rounded-md px-3 py-1 select-none font-semibold">Employers</a>
+          </li>
+          <li>
+            <a href="#" class="hover:underline">Students</a>
+          </li>
+          <li>
+            <a href="#" class="hover:underline">Profile</a>
+          </li>
+        </ul>
+        <div>
+          <a href="#" class="hover:underline">Log out</a>
+        </div>
+      </nav>
+      <div class="pb-4"></div>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-white text-lg sm:text-xl font-normal mb-6 select-none">Registered Employers</h2>
+    <div class="bg-[#6f7ed9cc] rounded-xl p-4 sm:p-6 md:p-8 backdrop-blur-sm">
+      <table class="w-full text-white text-sm sm:text-base table-fixed border-collapse rounded-lg overflow-hidden">
+        <thead>
+          <tr class="bg-[#7a7ed9cc] text-left select-none">
+            <th class="py-3 px-3 w-1/6">Company</th>
+            <th class="py-3 px-3 w-1/5">Email</th>
+            <th class="py-3 px-3 w-1/6">Industry</th>
+            <th class="py-3 px-3 w-1/6">Phone</th>
+            <th class="py-3 px-3 w-1/12">Status</th>
+            <th class="py-3 px-3 w-1/6">Date Registered</th>
+            <th class="py-3 px-3 w-1/12">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="bg-[#7a7ed9cc] border-b border-[#6f7ed9cc]">
+            <td class="py-3 px-3 truncate">TechNova Inc.</td>
+            <td class="py-3 px-3 truncate">contact@technova.com</td>
+            <td class="py-3 px-3 truncate">Technology</td>
+            <td class="py-3 px-3 truncate">555-123-4567</td>
+            <td class="py-3 px-3">
+              <span class="text-green-500 font-semibold select-none">Approved</span>
+            </td>
+            <td class="py-3 px-3 truncate">20/05/2025</td>
+            <td class="py-3 px-3">
+              <button
+                type="button"
+                class="bg-[#7a7ed9cc] hover:bg-[#8a8fe9cc] text-white rounded-md px-4 py-2 select-none"
+              >
+                View
+              </button>
+            </td>
+          </tr>
+          <tr class="bg-[#7a7ed9cc] border-b border-[#6f7ed9cc]">
+            <td class="py-3 px-3 truncate">GreenFields Ltd.</td>
+            <td class="py-3 px-3 truncate">hr@greenfields.com</td>
+            <td class="py-3 px-3 truncate">Agriculture</td>
+            <td class="py-3 px-3 truncate">555-234-5678</td>
+            <td class="py-3 px-3">
+              <span class="bg-yellow-500 bg-opacity-30 text-yellow-400 rounded-md px-2 py-0.5 font-semibold select-none inline-block w-max">
+                Pending
+              </span>
+            </td>
+            <td class="py-3 px-3 truncate">18/05/2025</td>
+            <td class="py-3 px-3">
+              <button
+                type="button"
+                class="bg-[#7a7ed9cc] hover:bg-[#8a8fe9cc] text-white rounded-md px-4 py-2 select-none"
+                onclick="openReviewForm()"
+              >
+                Review
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer class="bg-[#6f7ed9cc] backdrop-blur-sm text-white text-center text-xs sm:text-sm py-4 select-none">
+    Intern Connect © 2025 | All Rights Reserved
+  </footer>
+
+  <div
+    id="reviewModal"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden"
+    aria-hidden="true"
+    style="z-index: 50;"
+>
+    <div class="bg-[#6f7ed9cc] rounded-lg max-w-md w-full p-6 relative shadow-lg"> <!-- Updated color -->
+        <button
+            aria-label="Close review form"
+            class="absolute top-3 right-3 text-gray-600 hover:text-gray-900"
+            onclick="closeReviewForm()"
+        >
+            <i class="fas fa-times"></i>
+        </button>
+        <h3 class="text-lg font-semibold mb-4 text-white">Review Employer</h3> <!-- Updated text color -->
+        <form>
+            <div class="mb-4">
+                <label for="companyName" class="block text-white font-medium mb-1">Company Name</label>
+                <input
+                    type="text"
+                    id="companyName"
+                    name="companyName"
+                    value="GreenFields Ltd."
+                    readonly
+                    class="w-full border border-gray-300 rounded-md px-3 py-2 bg-[#6f7ed9cc] cursor-not-allowed" <!-- Updated color -->
+                
+            </div>
+            <div class="mb-4">
+                <label for="status" class="block text-white font-medium mb-1">Status</label>
+                <select
+                    id="status"
+                    name="status"
+                    class="w-full border border-gray-300 rounded-md px-3 py-2 bg-[#6f7ed9cc] text-white" <!-- Updated color -->
+                
+                    <option value="pending" selected>Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="comments" class="block text-white font-medium mb-1">Comments</label>
+                <textarea
+                    id="comments"
+                    name="comments"
+                    rows="4"
+                    placeholder="Add your review comments here..."
+                    class="w-full border border-gray-300 rounded-md px-3 py-2 bg-[#6f7ed9cc] text-white" <!-- Updated color -->
+                </textarea>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button
+                    type="button"
+                    class="px-4 py-2 rounded-md bg-[#7a7ed9cc] hover:bg-[#8a8fe9cc] text-white"
+                    onclick="closeReviewForm()"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    class="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                    Submit
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+  <script>
+    function openReviewForm() {
+      const modal = document.getElementById("reviewModal");
+      modal.classList.remove("hidden");
+      modal.setAttribute("aria-hidden", "false");
+      // Prevent background scroll when modal is open
+      document.body.style.overflow = "hidden";
+    }
+    function closeReviewForm() {
+      const modal = document.getElementById("reviewModal");
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+      // Restore background scroll
+      document.body.style.overflow = "";
+    }
+  </script>
+</body>
+</html>

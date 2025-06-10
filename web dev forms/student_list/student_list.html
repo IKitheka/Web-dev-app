@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Intern Connect | Students</title>
+<link rel="icon" href="/static/images/title.png">
+<link rel="stylesheet" href ="student_list.css">
+</head>
+<body>
+<!-- Aurora Background -->
+<svg class="bg-animation" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+<path fill="url(#aurora-gradient)" d="M0,128L60,138.7C120,149,240,171,360,154.7C480,139,600,85,720,96C840,107,960,181,1080,197.3C1200,213,1320,171,1380,149.3L1440,128L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
+<defs>
+<linearGradient id="aurora-gradient" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0%" stop-color="#4f46e5"/>
+<stop offset="50%" stop-color="#06b6d4"/>
+<stop offset="100%" stop-color="#8b5cf6"/>
+</linearGradient>
+</defs>
+</svg>
+
+<header class="header">STUDENT ACCOUNTS</header>
+
+<nav class="nav">
+<a href="#">INTERN CONNECT</a>
+<a href="#">Dashboard</a>
+<a href="#">Employers</a>
+<a class="active" href="#">Students</a>
+<a href="#">Profile</a>
+<a href="#" style="margin-left: auto;">Log out</a>
+</nav>
+
+<div class="content">
+<h1 class="welcome">Registered Students</h1>
+<div class="table-section">
+<table class="apps-table">
+<thead>
+<tr>
+<th>Name</th>
+<th>Email</th>
+<th>Department</th>
+<th>Academic Year</th>
+<th>Phone</th>
+<th>Date Joined</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alice Johnson</td>
+<td>alice.johnson@strathmore.edu</td>
+<td>Computer Science</td>
+<td>1st Year</td>
+<td>123-456-7890</td>
+<td>12/05/2025</td>
+<td><button class="btn" onclick="openModal(0)">View</button></td>
+</tr>
+<tr>
+<td>Bob Smith</td>
+<td>bob.smith@strathmore.edu</td>
+<td>Electrical Engineering</td>
+<td>2nd Year</td>
+<td>234-567-8901</td>
+<td>10/05/2025</td>
+<td><button class="btn" onclick="openModal(1)">View</button></td>
+</tr>
+<tr>
+<td>Carol Davis</td>
+<td>carol.davis@strathmore.edu</td>
+<td>Business Administration</td>
+<td>3rd Year</td>
+<td>345-678-9012</td>
+<td>08/05/2025</td>
+<td><button class="btn" onclick="openModal(2)">View</button></td>
+</tr>
+<tr>
+<td>David Wilson</td>
+<td>david.wilson@strathmore.edu</td>
+<td>Mechanical Engineering</td>
+<td>4th Year</td>
+<td>456-789-0123</td>
+<td>05/05/2025</td>
+<td><button class="btn" onclick="openModal(3)">View</button></td>
+</tr>
+<tr>
+<td>Emma Brown</td>
+<td>emma.brown@strathmore.edu</td>
+<td>Information Technology</td>
+<td>2nd Year</td>
+<td>567-890-1234</td>
+<td>03/05/2025</td>
+<td><button class="btn" onclick="openModal(4)">View</button></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Modal -->
+<div id="studentModal" class="modal">
+<div class="modal-content">
+<div class="modal-header">
+<h2 class="modal-title">Student Details</h2>
+<button class="close" onclick="closeModal()">&times;</button>
+</div>
+<div class="student-details" id="studentDetails">
+<!-- Student details will be populated here -->
+</div>
+</div>
+</div>
+
+<footer class="footer">Intern Connect &copy; 2025 | All Rights Reserved</footer>
+
+<script>
+// Student data
+const students = [
+  {
+    name: "Alice Johnson",
+    email: "alice.johnson@strathmore.edu",
+    department: "Computer Science",
+    year: "1st Year",
+    phone: "123-456-7890",
+    dateJoined: "12/05/2025",
+    status: "Active",
+    gpa: "3.8",
+    address: "123 University Ave, Nairobi",
+    emergencyContact: "Jane Johnson - 098-765-4321",
+    skills: "Python, Java, Web Development",
+    internshipsApplied: 5,
+    internshipsCompleted: 0
+  },
+  {
+    name: "Bob Smith",
+    email: "bob.smith@strathmore.edu",
+    department: "Electrical Engineering",
+    year: "2nd Year",
+    phone: "234-567-8901",
+    dateJoined: "10/05/2025",
+    status: "Active",
+    gpa: "3.6",
+    address: "456 Campus Rd, Nairobi",
+    emergencyContact: "Mary Smith - 087-654-3210",
+    skills: "Circuit Design, MATLAB, AutoCAD",
+    internshipsApplied: 3,
+    internshipsCompleted: 1
+  },
+  {
+    name: "Carol Davis",
+    email: "carol.davis@strathmore.edu",
+    department: "Business Administration",
+    year: "3rd Year",
+    phone: "345-678-9012",
+    dateJoined: "08/05/2025",
+    status: "Active",
+    gpa: "3.9",
+    address: "789 Student Lane, Nairobi",
+    emergencyContact: "Robert Davis - 076-543-2109",
+    skills: "Project Management, Marketing, Finance",
+    internshipsApplied: 8,
+    internshipsCompleted: 2
+  },
+  {
+    name: "David Wilson",
+    email: "david.wilson@strathmore.edu",
+    department: "Mechanical Engineering",
+    year: "4th Year",
+    phone: "456-789-0123",
+    dateJoined: "05/05/2025",
+    status: "Active",
+    gpa: "3.7",
+    address: "321 College St, Nairobi",
+    emergencyContact: "Sarah Wilson - 065-432-1098",
+    skills: "SolidWorks, Manufacturing, Thermodynamics",
+    internshipsApplied: 12,
+    internshipsCompleted: 3
+  },
+  {
+    name: "Emma Brown",
+    email: "emma.brown@strathmore.edu",
+    department: "Information Technology",
+    year: "2nd Year",
+    phone: "567-890-1234",
+    dateJoined: "03/05/2025",
+    status: "Active",
+    gpa: "3.5",
+    address: "654 Tech Blvd, Nairobi",
+    emergencyContact: "Michael Brown - 054-321-0987",
+    skills: "Network Administration, Cybersecurity, Database Management",
+    internshipsApplied: 4,
+    internshipsCompleted: 1
+  }
+];
+
+function openModal(studentIndex) {
+  const student = students[studentIndex];
+  const modal = document.getElementById('studentModal');
+  const detailsContainer = document.getElementById('studentDetails');
+  
+  // Clear previous content
+  detailsContainer.innerHTML = '';
+  
+  // Create detail rows
+  const details = [
+    { label: 'Full Name', value: student.name },
+    { label: 'Email', value: student.email },
+    { label: 'Department', value: student.department },
+    { label: 'Academic Year', value: student.year },
+    { label: 'Phone', value: student.phone },
+    { label: 'Date Joined', value: student.dateJoined },
+    { label: 'Status', value: `<span class="status-badge status-active">${student.status}</span>` },
+    { label: 'GPA', value: student.gpa },
+    { label: 'Address', value: student.address },
+    { label: 'Emergency Contact', value: student.emergencyContact },
+    { label: 'Skills', value: student.skills },
+    { label: 'Internships Applied', value: student.internshipsApplied },
+    { label: 'Internships Completed', value: student.internshipsCompleted }
+  ];
+  
+  details.forEach(detail => {
+    const row = document.createElement('div');
+    row.className = 'detail-row';
+    row.innerHTML = `
+      <span class="detail-label">${detail.label}:</span>
+      <span class="detail-value">${detail.value}</span>
+    `;
+    detailsContainer.appendChild(row);
+  });
+  
+  // Show modal
+  modal.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  const modal = document.getElementById('studentModal');
+  modal.classList.remove('show');
+  document.body.style.overflow = 'auto';
+}
+
+// Close modal when clicking outside
+document.getElementById('studentModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeModal();
+  }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeModal();
+  }
+});
+</script>
+
+</body>
+</html>
