@@ -1,9 +1,9 @@
 <?php
-$host = getenv("DB_HOST") ?: 'localhost';
-$port = getenv("DB_PORT") ?: '5432';
-$dbname = getenv("DB_NAME") ?: 'Intern';
-$username = getenv("DB_USER") ?: 'postgres';
-$password = getenv("DB_PASS") ?: '101121';
+$host = getenv("DB_HOST") ?? 'intern-db';
+$port =  getenv("DB_PORT") ?? '5432';
+$dbname =  getenv("DB_NAME") ?? 'intern-db';
+$username =  getenv("DB_USER") ?? 'intern-user';
+$password =  getenv("DB_PASS") ?? 'intern-pass';
 
 try {
 
