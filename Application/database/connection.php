@@ -18,7 +18,6 @@ function create_connection(){
     return $connection;
 }
 
-create_connection();
 
 
 ?>
