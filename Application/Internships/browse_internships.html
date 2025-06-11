@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intern Connect | Browse Internships</title>
+  <link rel="icon" type="image/x-icon" href="/static/images/title.png">
+  <link rel="stylesheet" href="/static/css/index.css">
+  <style>
+    .loading {
+      text-align: center;
+      padding: 20px;
+      font-style: italic;
+      color: #666;
+    }
+    
+    .error {
+      color: #e74c3c;
+      background-color: #fdf2f2;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+    }
+    
+    .results-count {
+      margin-top: 10px;
+      font-size: 0.9em;
+      color: #666;
+    }
+    
+    .apps-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    
+    .apps-table th,
+    .apps-table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    
+    .apps-table th {
+      background-color: #f8f9fa;
+      font-weight: bold;
+    }
+    
+    .apps-table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    
+    .apps-table tr:hover {
+      background-color: #f5f5f5;
+    }
+    
+    .no-results {
+      text-align: center;
+      font-style: italic;
+      color: #666;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Aurora Background Animation -->
+  <svg class="bg-animation" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+    <path fill="url(#aurora-gradient)" d="M0,128L60,138.7C120,149,240,171,360,154.7C480,139,600,85,720,96C840,107,960,181,1080,197.3C1200,213,1320,171,1380,149.3L1440,128L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
+    <defs>
+      <linearGradient id="aurora-gradient" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#4f46e5"/>
+        <stop offset="50%" stop-color="#06b6d4"/>
+        <stop offset="100%" stop-color="#8b5cf6"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- Header -->
+  <header class="header">
+    BROWSE INTERNSHIPS
+  </header>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <a href="#">INTERN CONNECT</a>
+    <a href="#">Dashboard</a>
+    <a href="#">Browse Internships</a>
+    <a href="#">My Applications</a>
+    <a href="#">Profile</a>
+    <a href="#" class="ml-auto">Log out</a>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="content">
+    <h1 class="welcome">Available Internship Opportunities</h1>
+
+    <div class="filter-table-wrapper">
+      <!-- Filter Form -->
+      <div class="filter-form">
+        <form class="form" id="searchForm">
+          <label for="jobTitle">Job Title:</label>
+          <input type="text" id="jobTitle" name="job_title" placeholder="Search by title..." class="form-input" />
+
+          <label for="companyName">Company Name:</label>
+          <input type="text" id="companyName" name="company_name" placeholder="Search by company..." class="form-input" />
+
+          <label for="location">Filter by Location:</label>
+          <select id="location" name="location" class="form-input">
+            <option value="all">All</option>
+            <option value="Remote">Remote</option>
+            <option value="Onsite - Farming Town">Onsite - Farming Town</option>
+          </select>
+
+          <label for="duration">Duration:</label>
+          <select id="duration" name="duration" class="form-input">
+            <option value="all">All</option>
+            <option value="3 months">3 months</option>
+            <option value="6 months">6 months</option>
+          </select>
+
+          <label for="industry">Industry:</label>
+          <select id="industry" name="industry" class="form-input">
+            <option value="all">All</option>
+            <option value="Technology">Technology</option>
+            <option value="Agriculture">Agriculture</option>
+          </select>
+
+          <button type="submit" class="btn">Search</button>
+          <button type="button" class="btn" id="clearBtn" style="background-color: #6c757d;">Clear</button>
+        </form>
+      </div>
+
+      <!-- Internship Results -->
+      <div class="internship-list">
+        <div id="loadingMessage" class="loading" style="display: none;">
+          Loading internships...
+        </div>
+        <div id="errorMessage" class="error" style="display: none;"></div>
+        <div id="resultsContainer">
+          <!-- Initial empty state or default results will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    Intern Connect &copy; 2025 | All Rights Reserved
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('searchForm');
+      const loadingMessage = document.getElementById('loadingMessage');
+      const errorMessage = document.getElementById('errorMessage');
+      const resultsContainer = document.getElementById('resultsContainer');
+      const clearBtn = document.getElementById('clearBtn');
+
+      // Load initial results
+      loadInternships();
+
+      // Handle form submission
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        loadInternships();
+      });
+
+      // Handle clear button
+      clearBtn.addEventListener('click', function() {
+        form.reset();
+        loadInternships();
+      });
+
+      // Handle real-time filtering on input changes
+      const inputs = form.querySelectorAll('input, select');
+      inputs.forEach(input => {
+        input.addEventListener('change', function() {
+          loadInternships();
+        });
+      });
+
+      function loadInternships() {
+        // Show loading state
+        loadingMessage.style.display = 'block';
+        errorMessage.style.display = 'none';
+        resultsContainer.innerHTML = '';
+
+        // Get form data
+        const formData = new FormData(form);
+        const params = new URLSearchParams();
+        
+        // Add form data to URL parameters
+        for (let [key, value] of formData.entries()) {
+          if (value && value !== 'all') {
+            params.append(key, value);
+          }
+        }
+
+        // Make AJAX request
+        fetch('search_internships.php?' + params.toString())
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.text();
+          })
+          .then(data => {
+            loadingMessage.style.display = 'none';
+            resultsContainer.innerHTML = data;
+          })
+          .catch(error => {
+            loadingMessage.style.display = 'none';
+            errorMessage.style.display = 'block';
+            errorMessage.textContent = 'Error loading internships: ' + error.message;
+            console.error('Error:', error);
+          });
+      }
+    });
+  </script>
+</body>
+</html>
