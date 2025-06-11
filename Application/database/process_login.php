@@ -7,11 +7,10 @@ if (session_status() == PHP_SESSION_NONE) {
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    $email = $_POST['email_add'];
-    $password = $_POST['pass'];
-    $accounttype = $_POST['acc_type'];
+    $email = $_POST['email'];
+    $password = $_POST['password'];
+    $accounttype = $_POST['user_type'];
     
-    // Basic validation
     if (empty($email) || empty($password)) {
         $_SESSION['error'] = "Email and password are required";
         header("Location: login.php");
@@ -19,8 +18,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
     
     try {
-        // Fix: You cannot use variables for table names in prepared statements
-        // Use string concatenation instead (be careful with this approach)
         $sql = "SELECT id, email, password, name FROM " . $accounttype . " WHERE email = ? AND status = 'active'";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$email]);
