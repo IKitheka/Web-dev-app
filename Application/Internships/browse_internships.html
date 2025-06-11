@@ -5,15 +5,158 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Intern Connect | Browse Internships</title>
   <link rel="icon" type="image/x-icon" href="/static/images/title.png">
-  <link rel="stylesheet" href="/static/css/index.css">
+  <link rel="stylesheet" href="../static/css/index.css">
   <style>
-    .loading {
-      text-align: center;
+    /* Internal styles to preserve your theme */
+    body {
+      background: linear-gradient(135deg, #4f46e5, #8b5cf6, #06b6d4);
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       padding: 20px;
-      font-style: italic;
-      color: #666;
+      min-height: 100vh;
     }
-    
+
+    .header {
+      font-size: 2rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 20px;
+      padding: 10px 20px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.3s;
+    }
+
+    .nav a:hover {
+      color: #ffeb3b;
+    }
+
+    .ml-auto {
+      margin-left: auto;
+    }
+
+    .content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .welcome {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 30px;
+    }
+
+    .filter-table-wrapper {
+      display: flex;
+      gap: 2rem;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .filter-form {
+      flex: 1;
+      max-width: 300px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .form label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 0.3rem;
+      border-radius: 8px;
+      border: none;
+      background-color: #ffffffcc;
+      color: #333;
+      font-size: 1rem;
+    }
+
+    .form select.form-input {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23333' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 10px 6px;
+      padding-right: 30px;
+    }
+
+    .btn {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 10px;
+      margin-top: 1rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+      width: 100%;
+    }
+
+    .btn:hover {
+      background: #4f46e5;
+    }
+
+    .internship-list {
+      flex: 3;
+      overflow-x: auto;
+    }
+
+    .apps-table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .apps-table th,
+    .apps-table td {
+      padding: 15px;
+      text-align: left;
+      color: #fff;
+    }
+
+    .apps-table th {
+      background-color: rgba(255, 255, 255, 0.2);
+      font-weight: 600;
+    }
+
+    .apps-table tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .loading,
+    .no-results {
+      text-align: center;
+      font-style: italic;
+      color: #ddd;
+      padding: 20px;
+    }
+
     .error {
       color: #e74c3c;
       background-color: #fdf2f2;
@@ -21,50 +164,49 @@
       border-radius: 5px;
       margin: 10px 0;
     }
-    
-    .results-count {
-      margin-top: 10px;
-      font-size: 0.9em;
-      color: #666;
-    }
-    
-    .apps-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    
-    .apps-table th,
-    .apps-table td {
-      border: 1px solid #ddd;
-      padding: 12px;
-      text-align: left;
-    }
-    
-    .apps-table th {
-      background-color: #f8f9fa;
-      font-weight: bold;
-    }
-    
-    .apps-table tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-    
-    .apps-table tr:hover {
-      background-color: #f5f5f5;
-    }
-    
-    .no-results {
+
+    .footer {
       text-align: center;
-      font-style: italic;
-      color: #666;
+      margin-top: 40px;
       padding: 20px;
+      font-size: 0.9rem;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+    }
+
+    .bg-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: -1;
+    }
+
+    @media (max-width: 768px) {
+      .filter-table-wrapper {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .filter-form,
+      .internship-list {
+        width: 100%;
+      }
+
+      .nav {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .ml-auto {
+        margin-left: 0;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- Aurora Background Animation -->
+  <!-- Aurora Background -->
   <svg class="bg-animation" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
     <path fill="url(#aurora-gradient)" d="M0,128L60,138.7C120,149,240,171,360,154.7C480,139,600,85,720,96C840,107,960,181,1080,197.3C1200,213,1320,171,1380,149.3L1440,128L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
     <defs>
@@ -77,9 +219,7 @@
   </svg>
 
   <!-- Header -->
-  <header class="header">
-    BROWSE INTERNSHIPS
-  </header>
+  <header class="header">BROWSE INTERNSHIPS</header>
 
   <!-- Navigation -->
   <nav class="nav">
@@ -96,7 +236,6 @@
     <h1 class="welcome">Available Internship Opportunities</h1>
 
     <div class="filter-table-wrapper">
-      <!-- Filter Form -->
       <div class="filter-form">
         <form class="form" id="searchForm">
           <label for="jobTitle">Job Title:</label>
@@ -105,7 +244,7 @@
           <label for="companyName">Company Name:</label>
           <input type="text" id="companyName" name="company_name" placeholder="Search by company..." class="form-input" />
 
-          <label for="location">Filter by Location:</label>
+          <label for="location">Location:</label>
           <select id="location" name="location" class="form-input">
             <option value="all">All</option>
             <option value="Remote">Remote</option>
@@ -131,15 +270,10 @@
         </form>
       </div>
 
-      <!-- Internship Results -->
       <div class="internship-list">
-        <div id="loadingMessage" class="loading" style="display: none;">
-          Loading internships...
-        </div>
+        <div id="loadingMessage" class="loading" style="display: none;">Loading internships...</div>
         <div id="errorMessage" class="error" style="display: none;"></div>
-        <div id="resultsContainer">
-          <!-- Initial empty state or default results will be loaded here -->
-        </div>
+        <div id="resultsContainer"></div>
       </div>
     </div>
   </div>
@@ -149,60 +283,42 @@
     Intern Connect &copy; 2025 | All Rights Reserved
   </footer>
 
+  <!-- JavaScript -->
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const form = document.getElementById('searchForm');
       const loadingMessage = document.getElementById('loadingMessage');
       const errorMessage = document.getElementById('errorMessage');
       const resultsContainer = document.getElementById('resultsContainer');
       const clearBtn = document.getElementById('clearBtn');
 
-      // Load initial results
       loadInternships();
 
-      // Handle form submission
-      form.addEventListener('submit', function(e) {
+      form.addEventListener('submit', function (e) {
         e.preventDefault();
         loadInternships();
       });
 
-      // Handle clear button
-      clearBtn.addEventListener('click', function() {
+      clearBtn.addEventListener('click', function () {
         form.reset();
         loadInternships();
       });
 
-      // Handle real-time filtering on input changes
-      const inputs = form.querySelectorAll('input, select');
-      inputs.forEach(input => {
-        input.addEventListener('change', function() {
-          loadInternships();
-        });
-      });
-
       function loadInternships() {
-        // Show loading state
         loadingMessage.style.display = 'block';
         errorMessage.style.display = 'none';
         resultsContainer.innerHTML = '';
 
-        // Get form data
         const formData = new FormData(form);
         const params = new URLSearchParams();
-        
-        // Add form data to URL parameters
+
         for (let [key, value] of formData.entries()) {
-          if (value && value !== 'all') {
-            params.append(key, value);
-          }
+          params.append(key, value);
         }
 
-        // Make AJAX request
         fetch('search_internships.php?' + params.toString())
           .then(response => {
-            if (!response.ok) {
-              throw new Error('Network response was not ok');
-            }
+            if (!response.ok) throw new Error('Network response was not ok');
             return response.text();
           })
           .then(data => {
@@ -213,7 +329,6 @@
             loadingMessage.style.display = 'none';
             errorMessage.style.display = 'block';
             errorMessage.textContent = 'Error loading internships: ' + error.message;
-            console.error('Error:', error);
           });
       }
     });
