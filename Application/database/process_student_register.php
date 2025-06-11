@@ -1,6 +1,8 @@
 <?php
 require_once 'connection.php';
 
+$connection = create_connection();
+
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
@@ -49,35 +51,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
     
     if (empty($errors)) {
-        try {
-            $stmt = $pdo->prepare("SELECT id FROM students WHERE email = ?");
-            $stmt->execute([$email]);
-            if ($stmt->fetch()) {
-                $errors[] = "Email already registered";
-            }
-        } catch (PDOException $e) {
+        // Check if email already exists
+        $email_escaped = pg_escape_string($connection, $email);
+        $check_query = "SELECT student_id FROM Students WHERE email = '$email_escaped'";
+        $result = pg_query($connection, $check_query);
+        
+        if (!$result) {
             $errors[] = "Database error occurred";
-            error_log("Student registration check error: " . $e->getMessage());
+            error_log("Student registration check error: " . pg_last_error($connection));
+        } elseif (pg_num_rows($result) > 0) {
+            $errors[] = "Email already registered";
         }
     }
     
     if (empty($errors)) {
-        try {
-            // Hash the password
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            
-            // Insert student record
-            $stmt = $pdo->prepare("INSERT INTO students (name, email, phone, department, academic_year, password, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'active', NOW())");
-            $stmt->execute([$name, $email, $phone, $department, $academic_year, $hashed_password]);
-            
+        // Hash the password
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        
+        // Escape all input data
+        $name_escaped = pg_escape_string($connection, $name);
+        $email_escaped = pg_escape_string($connection, $email);
+        $phone_escaped = pg_escape_string($connection, $phone);
+        $department_escaped = pg_escape_string($connection, $department);
+        $academic_year_escaped = pg_escape_string($connection, $academic_year);
+        $password_escaped = pg_escape_string($connection, $hashed_password);
+        
+        // Insert student record
+        $insert_query = "INSERT INTO Students (name, email, phone, department, academic_year, password_hash) 
+                        VALUES ('$name_escaped', '$email_escaped', '$phone_escaped', '$department_escaped', '$academic_year_escaped', '$password_escaped')";
+        
+        $result = pg_query($connection, $insert_query);
+        
+        if ($result) {
             // Registration successful
             $_SESSION['success'] = "Registration successful! You can now log in.";
             header("Location: ../views/login.html");
             exit();
-            
-        } catch (PDOException $e) {
+        } else {
             $errors[] = "Registration failed. Please try again.";
-            error_log("Student registration error: " . $e->getMessage());
+            error_log("Student registration error: " . pg_last_error($connection));
         }
     }
     
@@ -98,4 +110,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     header("Location: ../views/student_register.html");
     exit();
 }
+
+// Close the connection
+pg_close($connection);
 ?>

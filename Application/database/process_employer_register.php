@@ -1,12 +1,13 @@
 <?php
 require_once 'connection.php';
 
+$connection = create_connection();
+
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    
     
     $company_name = trim($_POST['company_name']);
     $email = trim($_POST['email']);
@@ -41,32 +42,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
     
     if (empty($errors)) {
-        try {
-            $stmt = $pdo->prepare("SELECT id FROM employers WHERE email = ?");
-            $stmt->execute([$email]);
-            if ($stmt->fetch()) {
-                $errors[] = "Email already registered";
-            }
-        } catch (PDOException $e) {
+        // Check if email already exists
+        $email_escaped = pg_escape_string($connection, $email);
+        $check_query = "SELECT employer_id FROM Employers WHERE email = '$email_escaped'";
+        $result = pg_query($connection, $check_query);
+        
+        if (!$result) {
             $errors[] = "Database error occurred";
-            error_log("Employer registration check error: " . $e->getMessage());
+            error_log("Employer registration check error: " . pg_last_error($connection));
+        } elseif (pg_num_rows($result) > 0) {
+            $errors[] = "Email already registered";
         }
     }
     
     if (empty($errors)) {
-        try {
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            
-            $stmt = $pdo->prepare("INSERT INTO employers (company_name, email, phone, industry, address, password, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'active', NOW())");
-            $stmt->execute([$company_name, $email, $phone, $industry, $address, $hashed_password]);
-            
+        // Hash the password
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        
+        // Escape all input data
+        $company_name_escaped = pg_escape_string($connection, $company_name);
+        $email_escaped = pg_escape_string($connection, $email);
+        $phone_escaped = pg_escape_string($connection, $phone);
+        $industry_escaped = pg_escape_string($connection, $industry);
+        $address_escaped = pg_escape_string($connection, $address);
+        $password_escaped = pg_escape_string($connection, $hashed_password);
+        
+        // Insert employer record
+        $insert_query = "INSERT INTO Employers (company_name, email, phone, industry, address, password_hash) 
+                        VALUES ('$company_name_escaped', '$email_escaped', '$phone_escaped', '$industry_escaped', '$address_escaped', '$password_escaped')";
+        
+        $result = pg_query($connection, $insert_query);
+        
+        if ($result) {
+            // Registration successful
             $_SESSION['success'] = "Registration successful! You can now log in.";
             header("Location: ../views/login.html");
             exit();
-            
-        } catch (PDOException $e) {
+        } else {
             $errors[] = "Registration failed. Please try again.";
-            error_log("Employer registration error: " . $e->getMessage());
+            error_log("Employer registration error: " . pg_last_error($connection));
         }
     }
     
@@ -87,4 +101,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     header("Location: ../views/employer_register.html");
     exit();
 }
+
+// Close the connection
+pg_close($connection);
 ?>
