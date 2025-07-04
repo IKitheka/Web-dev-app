@@ -1,3 +1,171 @@
+<?php
+session_start();
+require_once 'connection.php';
+
+$error_message = '';
+$success_message = '';
+
+if (isset($_SESSION['user_id']) && isset($_SESSION['user_type'])) {
+    switch ($_SESSION['user_type']) {
+        case 'student':
+            header("Location: student_dashboard.php");
+            break;
+        case 'employer':
+            header("Location: employer_dashboard.php");
+            break;
+        case 'admin':
+            header("Location: admin_dashboard.php");
+            break;
+    }
+    exit();
+}
+
+if (isset($_COOKIE['remember_token']) && !isset($_SESSION['user_id'])) {
+    try {
+        $db = getDB();
+        $token = $_COOKIE['remember_token'];
+        
+        $sql = "SELECT u.*, us.session_token FROM users u 
+                JOIN user_sessions us ON u.id = us.user_id 
+                WHERE us.session_token = ? AND us.expires_at > NOW()";
+        $result = $db->query($sql, [$token]);
+        
+        if ($result && $user = $result->fetch_assoc()) {
+            
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_type'] = $user['user_type'];
+            $_SESSION['user_email'] = $user['email'];
+            $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+            $_SESSION['login_time'] = time();
+          
+            switch ($user['user_type']) {
+                case 'student':
+                    header("Location: student_dashboard.php");
+                    break;
+                case 'employer':
+                    header("Location: employer_dashboard.php");
+                    break;
+                case 'admin':
+                    header("Location: admin_dashboard.php");
+                    break;
+            }
+            exit();
+        }
+    } catch (Exception $e) {
+        setcookie('remember_token', '', time() - 3600, '/');
+        error_log("Remember me error: " . $e->getMessage());
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $user_type = trim($_POST['user_type'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $remember_me = isset($_POST['remember_me']);
+    
+    if (empty($user_type) || empty($email) || empty($password)) {
+        $error_message = "⚠️ Please fill in all required fields.";
+    } 
+    elseif ($user_type === 'student' && !str_ends_with($email, '@strathmore.edu')) {
+        $error_message = "🎓 Students must use their Strathmore University email address (@strathmore.edu).";
+    }
+
+    elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error_message = "📧 Please enter a valid email address.";
+    }
+    else {
+       
+        try {
+            $db = getDB();
+            
+            $sql = "SELECT * FROM users WHERE email = ? AND user_type = ?";
+            $result = $db->query($sql, [$email, $user_type]);
+            
+            if ($result && $user = $result->fetch_assoc()) {
+                if (password_verify($password, $user['password'])) {
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['user_type'] = $user['user_type'];
+                    $_SESSION['user_email'] = $user['email'];
+                    $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+                    $_SESSION['login_time'] = time();
+                    
+                    if ($remember_me) {
+                      
+                        $token = bin2hex(random_bytes(32));
+                        $expires = date('Y-m-d H:i:s', time() + (30 * 24 * 60 * 60)); // 30 days
+                        
+                        $sql = "INSERT INTO user_sessions (user_id, session_token, expires_at) 
+                                VALUES (?, ?, ?) 
+                                ON DUPLICATE KEY UPDATE session_token = ?, expires_at = ?";
+                        $db->query($sql, [$user['id'], $token, $expires, $token, $expires]);
+                       
+                        setcookie('remember_token', $token, time() + (30 * 24 * 60 * 60), '/', '', isset($_SERVER['HTTPS']), true);
+                    }
+                 
+                    $sql = "UPDATE users SET last_login = NOW() WHERE id = ?";
+                    $db->query($sql, [$user['id']]);
+                   
+                    switch ($user_type) {
+                        case 'student':
+                            header("Location: student_dashboard.php");
+                            break;
+                        case 'employer':
+                            header("Location: employer_dashboard.php");
+                            break;
+                        case 'admin':
+                            header("Location: admin_dashboard.php");
+                            break;
+                    }
+                    exit();
+                } else {
+                    $error_message = "Invalid credentials. Please check your email, password, and account type.";
+                }
+            } else {
+                $error_message = "Invalid credentials. Please check your email, password, and account type.";
+            }
+        } catch (Exception $e) {
+            $error_message = "🔧 Login failed. Please try again later.";
+            error_log("Login error: " . $e->getMessage());
+        }
+    }
+}
+
+if (isset($_GET['error'])) {
+    switch ($_GET['error']) {
+        case 'invalid_credentials':
+            $error_message = "Invalid credentials. Please check your email, password, and account type.";
+            break;
+        case 'empty_fields':
+            $error_message = "Please fill in all required fields.";
+            break;
+        case 'invalid_email':
+            $error_message = "Please enter a valid email address.";
+            break;
+        case 'student_email':
+            $error_message = "Students must use their Strathmore University email address (@strathmore.edu).";
+            break;
+        case 'session_expired':
+            $error_message = "Your session has expired. Please log in again.";
+            break;
+        default:
+            $error_message = "An error occurred. Please try again.";
+    }
+}
+
+if (isset($_GET['success'])) {
+    switch ($_GET['success']) {
+        case 'registered':
+            $success_message = "Registration successful! Please sign in with your credentials.";
+            break;
+        case 'password_reset':
+            $success_message = "Password reset successful! Please sign in with your new password.";
+            break;
+        case 'logout':
+            $success_message = "You have been logged out successfully.";
+            break;
+    }
+}
+?>
 <!DOCTYPE html>
 <html>
     <head>

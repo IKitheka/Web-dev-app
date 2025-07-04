@@ -1,10 +1,170 @@
+<?php
+session_start();
+
+require_once 'connection.php';
+
+function sendVerificationEmail($email, $token) {
+    
+    $verification_url = "http://" . $_SERVER['HTTP_HOST'] . "/verify_employer.php?token=" . $token;
+    
+    $subject = "Verify Your Employer Account - Intern Connect";
+    $message = "
+    <html>
+    <head>
+        <title>Verify Your Account</title>
+    </head>
+    <body>
+        <h2>Welcome to Intern Connect!</h2>
+        <p>Thank you for registering as an employer. Please click the link below to verify your account:</p>
+        <p><a href='{$verification_url}'>Verify Account</a></p>
+        <p>If you cannot click the link, copy and paste this URL into your browser:</p>
+        <p>{$verification_url}</p>
+        <p>This link will expire in 24 hours.</p>
+    </body>
+    </html>
+    ";
+    
+    $headers = "MIME-Version: 1.0" . "\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+    $headers .= "From: noreply@internconnect.com" . "\r\n";
+    
+    error_log("Verification email would be sent to: " . $email . " with token: " . $token);
+    return true;
+}
+
+$error_message = '';
+$success_message = '';
+
+if (isset($_SESSION['error'])) {
+    $error_message = $_SESSION['error'];
+    unset($_SESSION['error']);
+}
+
+if (isset($_SESSION['success'])) {
+    $success_message = $_SESSION['success'];
+    unset($_SESSION['success']);
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $company_name = trim($_POST['company_name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $industry = trim($_POST['industry'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
+    
+    $errors = [];
+    
+    if (empty($company_name)) {
+        $errors[] = "Company name is required";
+    }
+    
+    if (empty($email)) {
+        $errors[] = "Email is required";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = "Invalid email format";
+    }
+    
+    if (empty($industry)) {
+        $errors[] = "Industry selection is required";
+    }
+    
+    if (empty($password)) {
+        $errors[] = "Password is required";
+    } elseif (strlen($password) < 8) {
+        $errors[] = "Password must be at least 8 characters long";
+    }
+    
+    if ($password !== $confirm_password) {
+        $errors[] = "Passwords do not match";
+    }
+    
+    if (empty($errors)) {
+        $pdo = getDatabaseConnection();
+        
+        if ($pdo === null) {
+            $error_message = "Database connection failed. Please try again later.";
+        } else {
+            try {
+                $stmt = $pdo->prepare("SELECT id FROM employers WHERE email = ?");
+                $stmt->execute([$email]);
+                
+                if ($stmt->rowCount() > 0) {
+                    $error_message = "An account with this email already exists.";
+                } else {
+                    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                    
+                    
+                    $verification_token = bin2hex(random_bytes(32));
+                   
+                    $stmt = $pdo->prepare("
+                        INSERT INTO employers (
+                            company_name, email, phone, industry, address, 
+                            password, verification_token, created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                    ");
+                    
+                    $result = $stmt->execute([
+                        $company_name, $email, $phone, $industry, 
+                        $address, $hashed_password, $verification_token
+                    ]);
+                    
+                    if ($result) {
+                        if (sendVerificationEmail($email, $verification_token)) {
+                            $_SESSION['success'] = "Registration successful! Please check your email for verification instructions.";
+                        } else {
+                            $_SESSION['success'] = "Registration successful! However, there was an issue sending the verification email. Please contact support.";
+                        }
+                        
+                        $_POST = [];
+                      
+                        header("Location: " . $_SERVER['PHP_SELF']);
+                        exit();
+                    } else {
+                        $error_message = "Registration failed. Please try again.";
+                    }
+                }
+            } catch (PDOException $e) {
+                error_log("Database error: " . $e->getMessage());
+                $error_message = "A database error occurred. Please try again later.";
+            }
+        }
+    } else {
+        $error_message = implode('<br>', $errors);
+    }
+}
+
+$industries = [
+    'Technology',
+    'Healthcare',
+    'Finance',
+    'Education',
+    'Manufacturing',
+    'Retail',
+    'Construction',
+    'Agriculture',
+    'Transportation',
+    'Energy',
+    'Real Estate',
+    'Media & Entertainment',
+    'Telecommunications',
+    'Government',
+    'Non-Profit',
+    'Consulting',
+    'Legal',
+    'Tourism & Hospitality',
+    'Food & Beverage',
+    'Other'
+];
+?>
 <!DOCTYPE html>
 <html>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="../static/css/index.css">
-        <title>Student Registration</title>
+        <title>Employer Registration</title>
         <link rel="icon" type="image/x-icon" href="/static/images/title.png">
     </head>
     <body>
@@ -21,21 +181,26 @@
                 </defs>
             </svg>
 
-            <form id="student-register-form" class="register-form" action="../database/process_student_register.php" method="post">
-                <!-- Heading for our form -->
-                <h2 class="form-heading">Student Registration</h2>
+            <form id="employer-register-form" class="register-form" action="../database/process_employer_register.php" method="post">
+                
+                <h2 class="form-heading">Employer Registration</h2>
 
-                <!-- Full Name Input -->
+                <!-- Company Name Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
+                            <path d="M3 21h18"/>
+                            <path d="M5 21V7l8-4v18"/>
+                            <path d="M19 21V11l-6-4"/>
+                            <path d="M9 9v.01"/>
+                            <path d="M9 12v.01"/>
+                            <path d="M9 15v.01"/>
+                            <path d="M9 18v.01"/>
                         </svg>
                         <input 
                             type="text" 
-                            placeholder="Full Name"
-                            name="name"
+                            placeholder="Company Name"
+                            name="company_name"
                             class="form-input"
                             required />
                     </div>
@@ -50,11 +215,9 @@
                         </svg>
                         <input 
                             type="email" 
-                            placeholder="Student Email (@strathmore.edu)"
+                            placeholder="Company Email Address"
                             name="email" 
                             class="form-input"
-                            pattern=".*@strathmore\.edu$"
-                            title="Please use your Strathmore University email address"
                             required />
                     </div>
                 </div>
@@ -67,60 +230,59 @@
                         </svg>
                         <input 
                             type="tel" 
-                            placeholder="Phone Number"
+                            placeholder="Company Phone Number"
                             name="phone" 
                             class="form-input" />
                     </div>
                 </div>
 
-                <!-- Department Dropdown -->
+                <!-- Industry Dropdown -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
-                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="m2 17 10 5 10-5"/>
+                            <path d="m2 12 10 5 10-5"/>
                         </svg>
-                        <select name="department" class="form-input" required>
-                            <option value="">Select Department</option>
-                            <option value="Computer Science">Computer Science</option>
-                            <option value="Electrical Engineering">Electrical Engineering</option>
-                            <option value="Mechanical Engineering">Mechanical Engineering</option>
-                            <option value="Civil Engineering">Civil Engineering</option>
-                            <option value="Business Administration">Business Administration</option>
+                        <select name="industry" class="form-input" required>
+                            <option value="">Select Industry</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Healthcare">Healthcare</option>
                             <option value="Finance">Finance</option>
-                            <option value="Marketing">Marketing</option>
-                            <option value="Accounting">Accounting</option>
-                            <option value="Information Technology">Information Technology</option>
-                            <option value="Economics">Economics</option>
-                            <option value="Law">Law</option>
-                            <option value="Medicine">Medicine</option>
-                            <option value="Nursing">Nursing</option>
                             <option value="Education">Education</option>
-                            <option value="Psychology">Psychology</option>
+                            <option value="Manufacturing">Manufacturing</option>
+                            <option value="Retail">Retail</option>
+                            <option value="Construction">Construction</option>
+                            <option value="Agriculture">Agriculture</option>
+                            <option value="Transportation">Transportation</option>
+                            <option value="Energy">Energy</option>
+                            <option value="Real Estate">Real Estate</option>
+                            <option value="Media & Entertainment">Media & Entertainment</option>
+                            <option value="Telecommunications">Telecommunications</option>
+                            <option value="Government">Government</option>
+                            <option value="Non-Profit">Non-Profit</option>
+                            <option value="Consulting">Consulting</option>
+                            <option value="Legal">Legal</option>
+                            <option value="Tourism & Hospitality">Tourism & Hospitality</option>
+                            <option value="Food & Beverage">Food & Beverage</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Academic Year Dropdown -->
+                <!-- Address Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                            <line x1="16" y1="2" x2="16" y2="6"/>
-                            <line x1="8" y1="2" x2="8" y2="6"/>
-                            <line x1="3" y1="10" x2="21" y2="10"/>
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                            <circle cx="12" cy="10" r="3"/>
                         </svg>
-                        <select name="academic_year" class="form-input" required>
-                            <option value="">Select Academic Year</option>
-                            <option value="1st Year">1st Year</option>
-                            <option value="2nd Year">2nd Year</option>
-                            <option value="3rd Year">3rd Year</option>
-                            <option value="4th Year">4th Year</option>
-                            <option value="5th Year">5th Year</option>
-                            <option value="Graduate">Graduate</option>
-                            <option value="Masters">Masters</option>
-                            <option value="PhD">PhD</option>
-                        </select>
+                        <textarea 
+                            placeholder="Company Address"
+                            name="address" 
+                            class="form-textarea"
+                            rows="3"
+                            style="padding-left: calc(var(--spacing) * 10); min-height: calc(var(--spacing) * 16);"></textarea>
                     </div>
                 </div>
 
@@ -162,7 +324,7 @@
 
                 <!-- Register button -->
                 <div class="button-container">
-                    <button type="submit" class="submit-btn">Register as Student</button>
+                    <button type="submit" class="submit-btn">Register as Employer</button>
                 </div>
 
                 <!-- Navigation Links -->
@@ -171,16 +333,12 @@
                 </div>
 
                 <div class="form-switch-container" style="margin-top: calc(var(--spacing) * 2);">
-                    <a class="form-switch-link" href="employer_register.html">Register as Employer instead</a>
+                    <a class="form-switch-link" href="student_register.html">Register as Student instead</a>
                 </div>
 
                 <!-- Error message -->
                 <div id="password-error" class="error-message" hidden>
                     🔒 Passwords do not match. Please try again.
-                </div>
-
-                <div id="email-error" class="error-message" hidden>
-                    📧 Please use your Strathmore University email address (@strathmore.edu).
                 </div>
             </form>
         </div>
@@ -191,19 +349,16 @@
 
         <!-- JavaScript for form validation -->
         <script>
-            document.getElementById('student-register-form').addEventListener('submit', function(e) {
+            document.getElementById('employer-register-form').addEventListener('submit', function(e) {
                 const password = document.querySelector('input[name="password"]').value;
                 const confirmPassword = document.querySelector('input[name="confirm_password"]').value;
-                const email = document.querySelector('input[name="email"]').value;
                 
                 const passwordError = document.getElementById('password-error');
-                const emailError = document.getElementById('email-error');
                 
                 let hasError = false;
 
                 // Reset error displays
                 passwordError.style.display = "none";
-                emailError.style.display = "none";
 
                 // Password validation
                 if (password !== confirmPassword) {
@@ -216,33 +371,9 @@
                     }, 5000);
                 }
 
-                // Email validation for Strathmore domain
-                if (!email.endsWith('@strathmore.edu')) {
-                    e.preventDefault();
-                    emailError.style.display = "block";
-                    hasError = true;
-                    
-                    setTimeout(() => {
-                        emailError.style.display = "none";
-                    }, 5000);
-                }
-
                 // If no errors, allow form submission
                 if (!hasError) {
                     passwordError.style.display = "none";
-                    emailError.style.display = "none";
-                }
-            });
-
-            // Real-time email validation
-            document.querySelector('input[name="email"]').addEventListener('input', function(e) {
-                const email = e.target.value;
-                const emailError = document.getElementById('email-error');
-                
-                if (email && !email.endsWith('@strathmore.edu')) {
-                    emailError.style.display = "block";
-                } else {
-                    emailError.style.display = "none";
                 }
             });
 
@@ -259,30 +390,5 @@
                 });
             });
         </script>
-
-        <style>
-            /* Additional styles for select dropdowns */
-            select.form-input {
-                cursor: pointer;
-            }
-
-            select.form-input option {
-                background-color: var(--color-blue-900);
-                color: var(--color-white);
-                padding: calc(var(--spacing) * 2);
-            }
-
-            .success-message {
-                background-color: rgba(34, 197, 94, 0.1);
-                color: var(--color-cyan-300);
-                border: 1px solid var(--color-cyan-400);
-                font-size: var(--text-sm);
-                border-radius: var(--radius-lg);
-                padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
-                margin-top: calc(var(--spacing) * 3);
-                backdrop-filter: blur(var(--blur-md));
-                display: none;
-            }
-        </style>
     </body>
 </html>
