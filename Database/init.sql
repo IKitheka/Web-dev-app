@@ -62,7 +62,7 @@ CREATE TABLE Applications (
     student_id UUID NOT NULL,
     internship_id UUID NOT NULL,
     application_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    status VARCHAR(20) DEFAULT 'Pending' CHECK (status IN ('Pending', 'Approved', 'Rejected')),
+    status VARCHAR(20) DEFAULT 'Pending' CHECK (status IN ('Pending', 'Approved', 'Rejected', 'Interview Scheduled')),
     cover_letter TEXT,
     resume_url VARCHAR(255),
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
