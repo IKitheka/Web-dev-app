@@ -1,3 +1,20 @@
+<?php
+session_start();
+include '../database/connection.php';
+$conn = create_connection(); 
+
+// Fetch total stats
+$employer_count = pg_fetch_result(pg_query($conn, "SELECT COUNT(*) FROM Employers"), 0, 0);
+$student_count = pg_fetch_result(pg_query($conn, "SELECT COUNT(*) FROM Students"), 0, 0);
+$active_jobs = pg_fetch_result(pg_query($conn, "SELECT COUNT(*) FROM Internships WHERE is_active = TRUE"), 0, 0);
+
+// Fetch recent employers
+$recent_employers = pg_query($conn, "SELECT company_name, email, created_at FROM Employers ORDER BY created_at DESC LIMIT 4");
+
+// Fetch recent students
+$recent_students = pg_query($conn, "SELECT name, email, phone, department, academic_year, created_at FROM Students ORDER BY created_at DESC LIMIT 3");
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +22,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Intern Connect | Admin Dashboard</title>
   <link rel="icon" type="image/x-icon" href="/static/images/title.png">
-  <link rel="stylesheet" href="../static/css/index.css">
+  <link rel="stylesheet" href="../static/index.css">
 </head>
 <body>
   <!-- Aurora Background Animation -->
@@ -39,27 +56,27 @@
   <div class="content">
     <h1 class="welcome">Welcome, Admin</h1>
 
-    <!-- Employer Stats -->
+    <!-- Stats -->
     <div class="stats-container">
       <div class="stat-card">
-        <div class="stat-number">54</div>
+        <div class="stat-number"><?= $employer_count ?></div>
         <div class="stat-label">Total Employers</div>
       </div>
       <div class="stat-card">
-        <div class="stat-number">212</div>
+        <div class="stat-number"><?= $student_count ?></div>
         <div class="stat-label">Total Job Seekers</div>
       </div>
       <div class="stat-card">
-        <div class="stat-number">37</div>
-        <div class="stat-label">Active Jobs</div>
+        <div class="stat-number"><?= $active_jobs ?></div>
+        <div class="stat-label">Active Internships</div>
       </div>
       <div class="stat-card">
-        <div class="stat-number">5</div>
-        <div class="stat-label">Pending Reviews</div>
+        <div class="stat-number">—</div>
+        <div class="stat-label">Pending Reviews</div> <!-- You can replace this with logic if needed -->
       </div>
     </div>
 
-    <!-- Employer Table -->
+    <!-- Recent Employers -->
     <div class="recent-apps">
       <h2>Recent Employer Registrations</h2>
       <table class="apps-table">
@@ -67,45 +84,24 @@
           <tr>
             <th>Company</th>
             <th>Email</th>
-            <th>Status</th>
             <th>Date Registered</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Safaricom Ltd</td>
-            <td>contact@safaricom.co.ke</td>
-            <td><span class="status-approved">Approved</span></td>
-            <td>25/05/2025</td>
-            <td><button class="btn">View</button></td>
-          </tr>
-          <tr>
-            <td>Equity Bank</td>
-            <td>hr@equitybank.co.ke</td>
-            <td><span class="status-pending">Pending</span></td>
-            <td>24/05/2025</td>
-            <td><button class="btn">Review</button></td>
-          </tr>
-          <tr>
-            <td>KCB Group</td>
-            <td>jobs@kcbgroup.com</td>
-            <td><span class="status-approved">Approved</span></td>
-            <td>23/05/2025</td>
-            <td><button class="btn">View</button></td>
-          </tr>
-          <tr>
-            <td>Cooperative Bank</td>
-            <td>careers@co-opbank.co.ke</td>
-            <td><span class="status-pending">Pending</span></td>
-            <td>22/05/2025</td>
-            <td><button class="btn">Review</button></td>
-          </tr>
+          <?php while ($row = pg_fetch_assoc($recent_employers)): ?>
+            <tr>
+              <td><?= htmlspecialchars($row['company_name']) ?></td>
+              <td><?= htmlspecialchars($row['email']) ?></td>
+              <td><?= date("d/m/Y", strtotime($row['created_at'])) ?></td>
+              <td><button class="btn">View</button></td>
+            </tr>
+          <?php endwhile; ?>
         </tbody>
       </table>
     </div>
 
-    <!-- Student Table -->
+    <!-- Recent Students -->
     <div class="recent-apps">
       <h2>Recent Student Registrations</h2>
       <table class="apps-table">
@@ -121,34 +117,17 @@
           </tr>
         </thead>
         <tbody>
-          <!-- Replace these with real rows from your database -->
-          <tr>
-            <td>Alice Johnson</td>
-            <td>alice.johnson@strathmore.edu</td>
-            <td>123-456-7890</td>
-            <td>Computer Science</td>
-            <td>1st Year</td>
-            <td>10/05/2025</td>
-            <td><button class="btn">View</button></td>
-          </tr>
-          <tr>
-            <td>Bob Smith</td>
-            <td>bob.smith@strathmore.edu</td>
-            <td>234-567-8901</td>
-            <td>Electrical Engineering</td>
-            <td>2nd Year</td>
-            <td>09/05/2025</td>
-            <td><button class="btn">View</button></td>
-          </tr>
-          <tr>
-            <td>Carol Lee</td>
-            <td>carol.lee@strathmore.edu</td>
-            <td>345-678-9012</td>
-            <td>Business Administration</td>
-            <td>3rd Year</td>
-            <td>08/05/2025</td>
-            <td><button class="btn">View</button></td>
-          </tr>
+          <?php while ($row = pg_fetch_assoc($recent_students)): ?>
+            <tr>
+              <td><?= htmlspecialchars($row['name']) ?></td>
+              <td><?= htmlspecialchars($row['email']) ?></td>
+              <td><?= htmlspecialchars($row['phone']) ?></td>
+              <td><?= htmlspecialchars($row['department']) ?></td>
+              <td><?= htmlspecialchars($row['academic_year']) ?></td>
+              <td><?= date("d/m/Y", strtotime($row['created_at'])) ?></td>
+              <td><button class="btn">View</button></td>
+            </tr>
+          <?php endwhile; ?>
         </tbody>
       </table>
     </div>

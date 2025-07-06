@@ -1,3 +1,44 @@
+<?php
+session_start();
+include '../database/connection.php';
+$conn = create_connection();
+
+$student_id = $_SESSION['student_id'];
+
+if (!$student_id) {
+    header('Location: ../process_login.php');
+    exit();
+}
+
+// Get counts
+$active_applications = pg_fetch_result(pg_query($conn, "
+  SELECT COUNT(*) FROM Applications 
+  WHERE student_id = '$student_id' AND status = 'Pending'
+"), 0, 0);
+
+$completed_internships = pg_fetch_result(pg_query($conn, "
+  SELECT COUNT(*) FROM Applications a
+  JOIN Results r ON a.application_id = r.application_id
+  WHERE a.student_id = '$student_id' AND r.completion_date IS NOT NULL
+"), 0, 0);
+
+$pending_applications = pg_fetch_result(pg_query($conn, "
+  SELECT COUNT(*) FROM Applications 
+  WHERE student_id = '$student_id' AND status = 'Pending'
+"), 0, 0);
+
+// Get recent applications
+$recent_applications = pg_query($conn, "
+  SELECT e.company_name, i.title AS position, a.application_date, a.status
+  FROM Applications a
+  JOIN Internships i ON a.internship_id = i.internship_id
+  JOIN Employers e ON i.employer_id = e.employer_id
+  WHERE a.student_id = '$student_id'
+  ORDER BY a.application_date DESC
+  LIMIT 5
+");
+?>
+
 <!DOCTYPE html>
 <html>
     <head>
@@ -37,17 +78,17 @@
             
             <div class="stats-container">
                 <div class="stat-card">
-                    <div class="stat-number">0</div>
+                    <div class="stat-number"><?= $active_applications ?></div>
                     <div class="stat-label">Active Applications</div>
                 </div>
                 
                 <div class="stat-card">
-                    <div class="stat-number">0</div>
+                    <div class="stat-number"><?= $completed_internships ?></div>
                     <div class="stat-label">Completed Internships</div>
                 </div>
                 
                 <div class="stat-card">
-                    <div class="stat-number">0</div>
+                    <div class="stat-number"><?= $pending_applications ?></div>
                     <div class="stat-label">Pending Applications</div>
                 </div>
             </div>
@@ -65,11 +106,27 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="5" style="text-align: center; padding: 30px;">
-                                No recent applications found. Start applying to internships!
-                            </td>
-                        </tr>
+                        <?php 
+                        $has_applications = false;
+                        while ($row = pg_fetch_assoc($recent_applications)): 
+                            $has_applications = true;
+                        ?>
+                            <tr>
+                                <td><?= htmlspecialchars($row['company_name']) ?></td>
+                                <td><?= htmlspecialchars($row['position']) ?></td>
+                                <td><?= date("d/m/Y", strtotime($row['application_date'])) ?></td>
+                                <td><?= htmlspecialchars($row['status']) ?></td>
+                                <td><button class="btn">View</button></td>
+                            </tr>
+                        <?php endwhile; ?>
+                        
+                        <?php if (!$has_applications): ?>
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 30px;">
+                                    No recent applications found. Start applying to internships!
+                                </td>
+                            </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
