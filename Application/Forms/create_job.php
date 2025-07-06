@@ -1,3 +1,40 @@
+<?php
+require_once 'connection.php';
+
+$message = '';
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $title = trim($_POST['title'] ?? '');
+    $duration = trim($_POST['duration'] ?? '');
+    $location = trim($_POST['location'] ?? '');
+    $start_date = trim($_POST['start_date'] ?? '');
+    $end_date = trim($_POST['end_date'] ?? '');
+    $requirements = trim($_POST['requirements'] ?? '');
+    $description = trim($_POST['description'] ?? '');
+    
+    if (empty($title) || empty($duration) || empty($location) || empty($start_date) || empty($end_date) || empty($requirements) || empty($description)) {
+        $error = 'All fields are required.';
+    } elseif (strtotime($start_date) >= strtotime($end_date)) {
+        $error = 'End date must be after start date.';
+    } else {
+        try {
+            $stmt = $pdo->prepare("INSERT INTO internships (title, duration, location, start_date, end_date, requirements, description, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+            
+            
+            if ($stmt->execute([$title, $duration, $location, $start_date, $end_date, $requirements, $description])) {
+                $message = 'Internship posted successfully!';
+                
+                $title = $duration = $location = $start_date = $end_date = $requirements = $description = '';
+            } else {
+                $error = 'Error posting internship. Please try again.';
+            }
+        } catch (PDOException $e) {
+            $error = 'Database error: ' . $e->getMessage();
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
