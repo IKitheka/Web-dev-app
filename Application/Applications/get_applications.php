@@ -21,9 +21,9 @@ function get_employer_applications($employer_id) {
             s.academic_year,
             i.title as internship_title,
             i.location as internship_location
-        FROM Applications a
-        INNER JOIN Students s ON a.student_id = s.student_id
-        INNER JOIN Internships i ON a.internship_id = i.internship_id
+        FROM \"Applications\" a
+        INNER JOIN \"Students\" s ON a.student_id = s.student_id
+        INNER JOIN \"Internships\" i ON a.internship_id = i.internship_id
         WHERE i.employer_id = $1
         ORDER BY a.application_date DESC
     ";
@@ -62,9 +62,9 @@ function get_internship_applications($internship_id) {
             s.department,
             s.academic_year,
             i.title as internship_title
-        FROM Applications a
-        INNER JOIN Students s ON a.student_id = s.student_id
-        INNER JOIN Internships i ON a.internship_id = i.internship_id
+        FROM \"Applications\" a
+        INNER JOIN \"Students\" s ON a.student_id = s.student_id
+        INNER JOIN \"Internships\" i ON a.internship_id = i.internship_id
         WHERE a.internship_id = $1
         ORDER BY a.application_date DESC
     ";
@@ -101,10 +101,10 @@ function get_application_details($application_id) {
             i.location as internship_location,
             i.duration,
             e.company_name
-        FROM Applications a
-        INNER JOIN Students s ON a.student_id = s.student_id
-        INNER JOIN Internships i ON a.internship_id = i.internship_id
-        INNER JOIN Employers e ON i.employer_id = e.employer_id
+        FROM \"Applications\" a
+        INNER JOIN \"Students\" s ON a.student_id = s.student_id
+        INNER JOIN \"Internships\" i ON a.internship_id = i.internship_id
+        INNER JOIN \"Employers\" e ON i.employer_id = e.employer_id
         WHERE a.application_id = $1
     ";
     

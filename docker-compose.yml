@@ -1,37 +1,51 @@
 services:
   intern-db:
     image: postgres:16
+    container_name: intern-connect-db
     environment:
       POSTGRES_DB: CampusConnect
       POSTGRES_USER: SuperUser
       POSTGRES_PASSWORD: dvTRBqRJkRiebPIgiYKLYBQAdwlsWWmF
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./Database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./Database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    ports:
+      - "5432:5432"
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U SuperUser -d CampusConnect"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   
   intern-app:
     build: 
       context: .
       dockerfile: Dockerfile
+    container_name: intern-connect-app
     ports:
       - "3000:80"
     volumes:
       - ./Application:/var/www/html
     depends_on:
-      - intern-db
+      intern-db:
+        condition: service_healthy
     environment:
       - DB_HOST=intern-db
       - DB_NAME=CampusConnect
       - DB_USER=SuperUser
       - DB_PASS=dvTRBqRJkRiebPIgiYKLYBQAdwlsWWmF
       - DB_PORT=5432
+      - PHP_ENV=development
     networks:
       - app-network
+    restart: unless-stopped
 
 networks:
   app-network:
+    driver: bridge
 
 volumes:
   db-data:
+    driver: local

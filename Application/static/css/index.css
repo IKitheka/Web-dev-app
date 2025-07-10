@@ -1092,3 +1092,29 @@ footer, .footer {
       left: calc(var(--spacing) * 2);
   }
 }
+
+.card-internship, .card-certificate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.card-internship .btn, .card-certificate .btn {
+  margin-top: 0.5rem;
+}
+.card-internship .card-actions, .card-certificate .card-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.card-employer-internship {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.card-employer-internship .btn {
+  margin-top: 0.5rem;
+}

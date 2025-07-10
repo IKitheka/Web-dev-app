@@ -1,12 +1,8 @@
 <?php
 session_start();
-
-require_once 'connection.php';
-
+require_once '../database/connection.php';
 function sendVerificationEmail($email, $token) {
-    
     $verification_url = "http://" . $_SERVER['HTTP_HOST'] . "/verify_employer.php?token=" . $token;
-    
     $subject = "Verify Your Employer Account - Intern Connect";
     $message = "
     <html>
@@ -23,118 +19,79 @@ function sendVerificationEmail($email, $token) {
     </body>
     </html>
     ";
-    
     $headers = "MIME-Version: 1.0" . "\r\n";
     $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
     $headers .= "From: noreply@internconnect.com" . "\r\n";
-    
     error_log("Verification email would be sent to: " . $email . " with token: " . $token);
     return true;
 }
-
 $error_message = '';
 $success_message = '';
-
 if (isset($_SESSION['error'])) {
     $error_message = $_SESSION['error'];
     unset($_SESSION['error']);
 }
-
 if (isset($_SESSION['success'])) {
     $success_message = $_SESSION['success'];
     unset($_SESSION['success']);
 }
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $company_name = trim($_POST['company_name'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $industry = trim($_POST['industry'] ?? '');
-    $address = trim($_POST['address'] ?? '');
+    $location = trim($_POST['location'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
-    
     $errors = [];
-    
     if (empty($company_name)) {
         $errors[] = "Company name is required";
     }
-    
     if (empty($email)) {
         $errors[] = "Email is required";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors[] = "Invalid email format";
     }
-    
     if (empty($industry)) {
         $errors[] = "Industry selection is required";
     }
-    
     if (empty($password)) {
         $errors[] = "Password is required";
     } elseif (strlen($password) < 8) {
         $errors[] = "Password must be at least 8 characters long";
     }
-    
     if ($password !== $confirm_password) {
         $errors[] = "Passwords do not match";
     }
-    
+    if (empty($location)) {
+        $errors[] = "Location is required";
+    }
     if (empty($errors)) {
-        $pdo = getDatabaseConnection();
-        
-        if ($pdo === null) {
-            $error_message = "Database connection failed. Please try again later.";
+        $connection = create_connection();
+        $check_query = "SELECT employer_id FROM Employers WHERE email = $1";
+        $result = pg_query_params($connection, $check_query, array($email));
+        if (!$result) {
+            $error_message = "Database error occurred";
+            error_log("Employer registration check error: " . pg_last_error($connection));
+        } elseif (pg_num_rows($result) > 0) {
+            $error_message = "An account with this email already exists.";
         } else {
-            try {
-                $stmt = $pdo->prepare("SELECT id FROM employers WHERE email = ?");
-                $stmt->execute([$email]);
-                
-                if ($stmt->rowCount() > 0) {
-                    $error_message = "An account with this email already exists.";
-                } else {
-                    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                    
-                    
-                    $verification_token = bin2hex(random_bytes(32));
-                   
-                    $stmt = $pdo->prepare("
-                        INSERT INTO employers (
-                            company_name, email, phone, industry, address, 
-                            password, verification_token, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-                    ");
-                    
-                    $result = $stmt->execute([
-                        $company_name, $email, $phone, $industry, 
-                        $address, $hashed_password, $verification_token
-                    ]);
-                    
-                    if ($result) {
-                        if (sendVerificationEmail($email, $verification_token)) {
-                            $_SESSION['success'] = "Registration successful! Please check your email for verification instructions.";
-                        } else {
-                            $_SESSION['success'] = "Registration successful! However, there was an issue sending the verification email. Please contact support.";
-                        }
-                        
-                        $_POST = [];
-                      
-                        header("Location: " . $_SERVER['PHP_SELF']);
-                        exit();
-                    } else {
-                        $error_message = "Registration failed. Please try again.";
-                    }
-                }
-            } catch (PDOException $e) {
-                error_log("Database error: " . $e->getMessage());
-                $error_message = "A database error occurred. Please try again later.";
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            $insert_query = "INSERT INTO Employers (company_name, email, phone, industry, location, password_hash) VALUES ($1, $2, $3, $4, $5, $6)";
+            $result = pg_query_params($connection, $insert_query, array($company_name, $email, $phone, $industry, $location, $hashed_password));
+            if ($result) {
+                $_SESSION['success'] = "Registration successful! You can now log in.";
+                header("Location: ../Authentication/login.php");
+                exit();
+            } else {
+                $error_message = "Registration failed. Please try again.";
+                error_log("Employer registration error: " . pg_last_error($connection));
             }
         }
     } else {
         $error_message = implode('<br>', $errors);
     }
 }
-
 $industries = [
     'Technology',
     'Healthcare',
@@ -169,7 +126,6 @@ $industries = [
     </head>
     <body>
         <div class="container form-container">
-            <!-- SVG for the Background flowing with Aurora based colors -->
             <svg class="bg-svg" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
                 <path fill="url(#aurora-gradient)" d="M0,128L60,138.7C120,149,240,171,360,154.7C480,139,600,85,720,96C840,107,960,181,1080,197.3C1200,213,1320,171,1380,149.3L1440,128L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
                 <defs>
@@ -180,12 +136,8 @@ $industries = [
                     </linearGradient>
                 </defs>
             </svg>
-
             <form id="employer-register-form" class="register-form" action="../database/process_employer_register.php" method="post">
-                
                 <h2 class="form-heading">Employer Registration</h2>
-
-                <!-- Company Name Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -205,8 +157,6 @@ $industries = [
                             required />
                     </div>
                 </div>
-
-                <!-- Email Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -221,8 +171,6 @@ $industries = [
                             required />
                     </div>
                 </div>
-
-                <!-- Phone Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -235,8 +183,6 @@ $industries = [
                             class="form-input" />
                     </div>
                 </div>
-
-                <!-- Industry Dropdown -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -269,8 +215,6 @@ $industries = [
                         </select>
                     </div>
                 </div>
-
-                <!-- Address Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -278,15 +222,13 @@ $industries = [
                             <circle cx="12" cy="10" r="3"/>
                         </svg>
                         <textarea 
-                            placeholder="Company Address"
-                            name="address" 
+                            placeholder="Company Location"
+                            name="location" 
                             class="form-textarea"
                             rows="3"
                             style="padding-left: calc(var(--spacing) * 10); min-height: calc(var(--spacing) * 16);"></textarea>
                     </div>
                 </div>
-
-                <!-- Password Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -302,8 +244,6 @@ $industries = [
                             required />
                     </div>
                 </div>
-
-                <!-- Confirm Password Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -321,63 +261,42 @@ $industries = [
                             required />
                     </div>
                 </div>
-
-                <!-- Register button -->
                 <div class="button-container">
                     <button type="submit" class="submit-btn">Register as Employer</button>
                 </div>
-
-                <!-- Navigation Links -->
                 <div class="form-switch-container">
-                    <a class="form-switch-link" href="login.html">Already have an account? Log In</a>
+                    <a class="form-switch-link" href="login.php">Already have an account? Log In</a>
                 </div>
-
                 <div class="form-switch-container" style="margin-top: calc(var(--spacing) * 2);">
-                    <a class="form-switch-link" href="student_register.html">Register as Student instead</a>
+                    <a class="form-switch-link" href="student_register.php">Register as Student instead</a>
                 </div>
-
-                <!-- Error message -->
                 <div id="password-error" class="error-message" hidden>
                     🔒 Passwords do not match. Please try again.
                 </div>
             </form>
         </div>
-
         <footer>
             Intern Connect  &copy; 2025
         </footer>
-
-        <!-- JavaScript for form validation -->
         <script>
             document.getElementById('employer-register-form').addEventListener('submit', function(e) {
                 const password = document.querySelector('input[name="password"]').value;
                 const confirmPassword = document.querySelector('input[name="confirm_password"]').value;
-                
                 const passwordError = document.getElementById('password-error');
-                
                 let hasError = false;
-
-                // Reset error displays
                 passwordError.style.display = "none";
-
-                // Password validation
                 if (password !== confirmPassword) {
                     e.preventDefault();
                     passwordError.style.display = "block";
                     hasError = true;
-                    
                     setTimeout(() => {
                         passwordError.style.display = "none";
                     }, 5000);
                 }
-
-                // If no errors, allow form submission
                 if (!hasError) {
                     passwordError.style.display = "none";
                 }
             });
-
-            // Style select dropdowns to match other inputs
             document.addEventListener('DOMContentLoaded', function() {
                 const selects = document.querySelectorAll('select.form-input');
                 selects.forEach(select => {

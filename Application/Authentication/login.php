@@ -1,169 +1,156 @@
 <?php
 session_start();
-require_once 'connection.php';
-
+require_once '../database/connection.php';
+require_once '../database/auth_helpers.php';
 $error_message = '';
 $success_message = '';
-
 if (isset($_SESSION['user_id']) && isset($_SESSION['user_type'])) {
-    switch ($_SESSION['user_type']) {
-        case 'student':
-            header("Location: student_dashboard.php");
-            break;
-        case 'employer':
-            header("Location: employer_dashboard.php");
-            break;
-        case 'admin':
-            header("Location: admin_dashboard.php");
-            break;
-    }
-    exit();
-}
-
-if (isset($_COOKIE['remember_token']) && !isset($_SESSION['user_id'])) {
-    try {
-        $db = getDB();
-        $token = $_COOKIE['remember_token'];
-        
-        $sql = "SELECT u.*, us.session_token FROM users u 
-                JOIN user_sessions us ON u.id = us.user_id 
-                WHERE us.session_token = ? AND us.expires_at > NOW()";
-        $result = $db->query($sql, [$token]);
-        
-        if ($result && $user = $result->fetch_assoc()) {
-            
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_type'] = $user['user_type'];
-            $_SESSION['user_email'] = $user['email'];
-            $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
-            $_SESSION['login_time'] = time();
-          
-            switch ($user['user_type']) {
-                case 'student':
-                    header("Location: student_dashboard.php");
-                    break;
-                case 'employer':
-                    header("Location: employer_dashboard.php");
-                    break;
-                case 'admin':
-                    header("Location: admin_dashboard.php");
-                    break;
-            }
-            exit();
+    if (validate_user_session()) {
+        switch ($_SESSION['user_type']) {
+            case 'student':
+                header("Location: ../Dashboards/student_dashboard.php");
+                break;
+            case 'employer':
+                header("Location: ../Dashboards/employer_dashboard.php");
+                break;
+            case 'admin':
+                header("Location: ../Dashboards/admin_dashboard.php");
+                break;
         }
-    } catch (Exception $e) {
-        setcookie('remember_token', '', time() - 3600, '/');
-        error_log("Remember me error: " . $e->getMessage());
+        exit();
+    } else {
+        session_destroy();
+        session_start();
     }
 }
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_type = trim($_POST['user_type'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $remember_me = isset($_POST['remember_me']);
-    
     if (empty($user_type) || empty($email) || empty($password)) {
         $error_message = "⚠️ Please fill in all required fields.";
     } 
     elseif ($user_type === 'student' && !str_ends_with($email, '@strathmore.edu')) {
         $error_message = "🎓 Students must use their Strathmore University email address (@strathmore.edu).";
     }
-
     elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error_message = "📧 Please enter a valid email address.";
     }
     else {
-       
         try {
-            $db = getDB();
-            
-            $sql = "SELECT * FROM users WHERE email = ? AND user_type = ?";
-            $result = $db->query($sql, [$email, $user_type]);
-            
-            if ($result && $user = $result->fetch_assoc()) {
-                if (password_verify($password, $user['password'])) {
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['user_type'] = $user['user_type'];
-                    $_SESSION['user_email'] = $user['email'];
-                    $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
-                    $_SESSION['login_time'] = time();
-                    
-                    if ($remember_me) {
-                      
-                        $token = bin2hex(random_bytes(32));
-                        $expires = date('Y-m-d H:i:s', time() + (30 * 24 * 60 * 60)); // 30 days
-                        
-                        $sql = "INSERT INTO user_sessions (user_id, session_token, expires_at) 
-                                VALUES (?, ?, ?) 
-                                ON DUPLICATE KEY UPDATE session_token = ?, expires_at = ?";
-                        $db->query($sql, [$user['id'], $token, $expires, $token, $expires]);
-                       
-                        setcookie('remember_token', $token, time() + (30 * 24 * 60 * 60), '/', '', isset($_SERVER['HTTPS']), true);
-                    }
-                 
-                    $sql = "UPDATE users SET last_login = NOW() WHERE id = ?";
-                    $db->query($sql, [$user['id']]);
-                   
-                    switch ($user_type) {
-                        case 'student':
-                            header("Location: student_dashboard.php");
-                            break;
-                        case 'employer':
-                            header("Location: employer_dashboard.php");
-                            break;
-                        case 'admin':
-                            header("Location: admin_dashboard.php");
-                            break;
-                    }
-                    exit();
-                } else {
-                    $error_message = "Invalid credentials. Please check your email, password, and account type.";
-                }
-            } else {
-                $error_message = "Invalid credentials. Please check your email, password, and account type.";
+            $conn = create_connection();
+            $table = '';
+            $id_column = '';
+            $name_column = '';
+            switch ($user_type) {
+                case 'student':
+                    $table = 'Students';
+                    $id_column = 'student_id';
+                    $name_column = 'name';
+                    break;
+                case 'employer':
+                    $table = 'Employers';
+                    $id_column = 'employer_id';
+                    $name_column = 'company_name';
+                    break;
+                case 'admin':
+                    $table = 'Administrators';
+                    $id_column = 'admin_id';
+                    $name_column = 'full_name';
+                    break;
+                default:
+                    $error_message = "Invalid account type selected.";
+                    break;
             }
+            if (!$error_message) {
+                $sql = "SELECT $id_column as user_id, email, password_hash, $name_column as name";
+                if ($user_type !== 'admin') {
+                    $sql .= ", status, deleted_at, disabled_at, disabled_reason";
+                }
+                $sql .= " FROM \"$table\" WHERE email = $1";
+                $result = pg_query_params($conn, $sql, [$email]);
+                if ($result && $user = pg_fetch_assoc($result)) {
+                    if (password_verify($password, $user['password_hash'])) {
+                        if ($user_type !== 'admin') {
+                            if ($user['deleted_at'] !== null) {
+                                $error_message = "🚫 Your account has been removed. Please contact support for assistance.";
+                            }
+                            elseif ($user['status'] !== 'active') {
+                                $reason = $user['disabled_reason'] ? ': ' . $user['disabled_reason'] : '';
+                                if ($user['status'] === 'disabled') {
+                                    $error_message = "🚫 Your account has been disabled" . $reason . ". Please contact support for assistance.";
+                                } elseif ($user['status'] === 'suspended') {
+                                    $error_message = "⏸️ Your account has been suspended" . $reason . ". Please contact support for assistance.";
+                                } else {
+                                    $error_message = "🚫 Your account is not active. Please contact support for assistance.";
+                                }
+                            }
+                        }
+                        if (!$error_message) {
+                            $_SESSION['user_id'] = $user['user_id'];
+                            $_SESSION['user_type'] = $user_type;
+                            $_SESSION['user_email'] = $user['email'];
+                            $_SESSION['user_name'] = $user['name'];
+                            $_SESSION['login_time'] = time();
+                            if ($remember_me) {
+                                ini_set('session.gc_maxlifetime', 30 * 24 * 60 * 60);
+                                session_set_cookie_params(30 * 24 * 60 * 60);
+                            }
+                            switch ($user_type) {
+                                case 'student':
+                                    header("Location: ../Dashboards/student_dashboard.php");
+                                    break;
+                                case 'employer':
+                                    header("Location: ../Dashboards/employer_dashboard.php");
+                                    break;
+                                case 'admin':
+                                    header("Location: ../Dashboards/admin_dashboard.php");
+                                    break;
+                            }
+                            exit();
+                        }
+                    } else {
+                        $error_message = "❌ Invalid credentials. Please check your email, password, and account type.";
+                    }
+                } else {
+                    $error_message = "❌ Invalid credentials. Please check your email, password, and account type.";
+                }
+            }
+            pg_close($conn);
         } catch (Exception $e) {
             $error_message = "🔧 Login failed. Please try again later.";
             error_log("Login error: " . $e->getMessage());
         }
     }
 }
-
 if (isset($_GET['error'])) {
     switch ($_GET['error']) {
-        case 'invalid_credentials':
-            $error_message = "Invalid credentials. Please check your email, password, and account type.";
-            break;
-        case 'empty_fields':
-            $error_message = "Please fill in all required fields.";
-            break;
-        case 'invalid_email':
-            $error_message = "Please enter a valid email address.";
-            break;
-        case 'student_email':
-            $error_message = "Students must use their Strathmore University email address (@strathmore.edu).";
-            break;
         case 'session_expired':
-            $error_message = "Your session has expired. Please log in again.";
+            $error_message = "⏰ Your session has expired. Please log in again.";
+            break;
+        case 'access_denied':
+            $error_message = "🚫 Access denied. Please log in with appropriate credentials.";
             break;
         default:
-            $error_message = "An error occurred. Please try again.";
+            $error_message = "❌ An error occurred. Please try again.";
     }
 }
-
 if (isset($_GET['success'])) {
     switch ($_GET['success']) {
         case 'registered':
-            $success_message = "Registration successful! Please sign in with your credentials.";
-            break;
-        case 'password_reset':
-            $success_message = "Password reset successful! Please sign in with your new password.";
+            $success_message = "✅ Registration successful! Please sign in with your credentials.";
             break;
         case 'logout':
-            $success_message = "You have been logged out successfully.";
+            $success_message = "👋 You have been logged out successfully.";
             break;
+        default:
+            $success_message = "✅ Action completed successfully.";
     }
+}
+if (isset($_SESSION['error_message'])) {
+    $error_message = $_SESSION['error_message'];
+    unset($_SESSION['error_message']);
 }
 ?>
 <!DOCTYPE html>
@@ -172,12 +159,11 @@ if (isset($_GET['success'])) {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="../static/css/index.css">
-        <title>Login - Internship Portal</title>
+        <title>Login - Intern Connect</title>
         <link rel="icon" type="image/x-icon" href="../static/images/title.png">
     </head>
     <body>
         <div class="container form-container">
-            <!-- SVG for the Background flowing with Aurora based colors -->
             <svg class="bg-svg" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
                 <path fill="url(#aurora-gradient)" d="M0,128L60,138.7C120,149,240,171,360,154.7C480,139,600,85,720,96C840,107,960,181,1080,197.3C1200,213,1320,171,1380,149.3L1440,128L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
                 <defs>
@@ -188,17 +174,21 @@ if (isset($_GET['success'])) {
                     </linearGradient>
                 </defs>
             </svg>
-
-            <form id="login-form" class="register-form" action="../database/process_login.php" method="post">
-                <!-- Heading for our form -->
+            <form id="login-form" class="register-form" method="post">
                 <h2 class="form-heading">Sign In</h2>
-                
-                <!-- Subtitle -->
                 <p style="text-align: center; color: rgba(255, 255, 255, 0.8); margin-bottom: calc(var(--spacing) * 6); font-size: 1.1rem;">
-                    Welcome back to the Internship Portal
+                    Welcome back to Intern Connect
                 </p>
-
-                <!-- User Type Selection -->
+                <?php if ($error_message): ?>
+                <div class="error-message" style="display: block; margin-bottom: calc(var(--spacing) * 4);">
+                    <?php echo htmlspecialchars($error_message); ?>
+                </div>
+                <?php endif; ?>
+                <?php if ($success_message): ?>
+                <div class="success-message" style="display: block; margin-bottom: calc(var(--spacing) * 4); background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: calc(var(--spacing) * 3); border-radius: calc(var(--border-radius) * 2); border: 1px solid rgba(34, 197, 94, 0.3);">
+                    <?php echo htmlspecialchars($success_message); ?>
+                </div>
+                <?php endif; ?>
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -209,14 +199,12 @@ if (isset($_GET['success'])) {
                         </svg>
                         <select name="user_type" class="form-input" required>
                             <option value="">Select Account Type</option>
-                            <option value="student">Student</option>
-                            <option value="employer">Employer</option>
-                            <option value="admin">Administrator</option>
+                            <option value="student" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] === 'student') ? 'selected' : ''; ?>>Student</option>
+                            <option value="employer" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] === 'employer') ? 'selected' : ''; ?>>Employer</option>
+                            <option value="admin" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] === 'admin') ? 'selected' : ''; ?>>Administrator</option>
                         </select>
                     </div>
                 </div>
-
-                <!-- Email Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -228,11 +216,10 @@ if (isset($_GET['success'])) {
                             placeholder="Email Address"
                             name="email" 
                             class="form-input"
+                            value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>"
                             required />
                     </div>
                 </div>
-
-                <!-- Password Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -247,8 +234,6 @@ if (isset($_GET['success'])) {
                             required />
                     </div>
                 </div>
-
-                <!-- Remember Me and Forgot Password -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: calc(var(--spacing) * 4);">
                     <label style="display: flex; align-items: center; color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; cursor: pointer;">
                         <input 
@@ -257,34 +242,28 @@ if (isset($_GET['success'])) {
                             style="margin-right: calc(var(--spacing) * 2); accent-color: var(--color-cyan-500);">
                         Remember me
                     </label>
-                    <a href="forgot_password.html" class="form-switch-link" style="font-size: 0.9rem; margin: 0;">
+                    <a href="forgot_password.php" class="form-switch-link" style="font-size: 0.9rem; margin: 0;">
                         Forgot Password?
                     </a>
                 </div>
-
-                <!-- Login button -->
                 <div class="button-container">
                     <button type="submit" class="submit-btn">Sign In</button>
                 </div>
-
-                <!-- Divider -->
                 <div style="text-align: center; margin: calc(var(--spacing) * 6) 0 calc(var(--spacing) * 4) 0; position: relative;">
                     <span style="background: linear-gradient(to bottom right, var(--color-blue-900), var(--color-indigo-800), var(--color-purple-900)); padding: 0 1rem; color: rgba(255, 255, 255, 0.7); font-size: 0.9rem;">
                         Don't have an account?
                     </span>
                     <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(255, 255, 255, 0.2); z-index: -1;"></div>
                 </div>
-
-                <!-- Registration Links -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--spacing) * 3); margin-top: calc(var(--spacing) * 4);">
-                    <a href="student_register.html" class="btn" style="text-align: center; text-decoration: none; margin: 0; padding: calc(var(--spacing) * 3); background-color: rgba(59, 130, 246, 0.3); border: 1px solid rgba(59, 130, 246, 0.5);">
+                    <a href="student_register.php" class="btn" style="text-align: center; text-decoration: none; margin: 0; padding: calc(var(--spacing) * 3); background-color: rgba(59, 130, 246, 0.3); border: 1px solid rgba(59, 130, 246, 0.5);">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                             <circle cx="12" cy="7" r="4"/>
                         </svg>
                         Student Sign Up
                     </a>
-                    <a href="employer_register.html" class="btn" style="text-align: center; text-decoration: none; margin: 0; padding: calc(var(--spacing) * 3); background-color: rgba(168, 85, 247, 0.3); border: 1px solid rgba(168, 85, 247, 0.5);">
+                    <a href="employer_register.php" class="btn" style="text-align: center; text-decoration: none; margin: 0; padding: calc(var(--spacing) * 3); background-color: rgba(168, 85, 247, 0.3); border: 1px solid rgba(168, 85, 247, 0.5);">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 21h18"/>
                             <path d="M5 21V7l8-4v18"/>
@@ -293,77 +272,38 @@ if (isset($_GET['success'])) {
                         Employer Sign Up
                     </a>
                 </div>
-
-                <!-- Error message -->
-                <div id="login-error" class="error-message" hidden>
-                    ❌ Invalid credentials. Please check your email, password, and account type.
-                </div>
             </form>
         </div>
-
         <footer>
-            Intern Connect  &copy; 2025
+            Intern Connect &copy; 2025 | All Rights Reserved
         </footer>
-
-        <!-- JavaScript for form validation and UX -->
         <script>
             document.getElementById('login-form').addEventListener('submit', function(e) {
                 const userType = document.querySelector('select[name="user_type"]').value;
                 const email = document.querySelector('input[name="email"]').value;
                 const password = document.querySelector('input[name="password"]').value;
-                
-                const loginError = document.getElementById('login-error');
-                
-                // Reset error display
-                loginError.style.display = "none";
-
-                // Basic validation
                 if (!userType || !email || !password) {
                     e.preventDefault();
-                    loginError.textContent = "⚠️ Please fill in all required fields.";
-                    loginError.style.display = "block";
-                    
-                    setTimeout(() => {
-                        loginError.style.display = "none";
-                    }, 5000);
+                    alert('⚠️ Please fill in all required fields.');
                     return;
                 }
-
-                // Email domain validation for students
                 if (userType === 'student' && !email.endsWith('@strathmore.edu')) {
                     e.preventDefault();
-                    loginError.textContent = "🎓 Students must use their Strathmore University email address (@strathmore.edu).";
-                    loginError.style.display = "block";
-                    
-                    setTimeout(() => {
-                        loginError.style.display = "none";
-                    }, 5000);
+                    alert('🎓 Students must use their Strathmore University email address (@strathmore.edu).');
                     return;
                 }
+                const submitBtn = this.querySelector('.submit-btn');
+                submitBtn.innerHTML = `
+                    <svg style="animation: spin 1s linear infinite; display: inline-block; margin-right: 0.5rem;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                    </svg>
+                    Signing In...
+                `;
+                submitBtn.disabled = true;
             });
-
-            // Real-time validation for student email
-            document.querySelector('input[name="email"]').addEventListener('input', function(e) {
-                const email = e.target.value;
-                const userType = document.querySelector('select[name="user_type"]').value;
-                const loginError = document.getElementById('login-error');
-                
-                if (userType === 'student' && email && !email.endsWith('@strathmore.edu')) {
-                    loginError.textContent = "🎓 Students must use their Strathmore University email address.";
-                    loginError.style.display = "block";
-                } else {
-                    loginError.style.display = "none";
-                }
-            });
-
-            // Update email placeholder based on user type
             document.querySelector('select[name="user_type"]').addEventListener('change', function(e) {
                 const userType = e.target.value;
                 const emailInput = document.querySelector('input[name="email"]');
-                const loginError = document.getElementById('login-error');
-                
-                loginError.style.display = "none";
-                
                 switch(userType) {
                     case 'student':
                         emailInput.placeholder = "Student Email (@strathmore.edu)";
@@ -378,8 +318,6 @@ if (isset($_GET['success'])) {
                         emailInput.placeholder = "Email Address";
                 }
             });
-
-            // Style select dropdowns to match other inputs
             document.addEventListener('DOMContentLoaded', function() {
                 const selects = document.querySelectorAll('select.form-input');
                 selects.forEach(select => {
@@ -390,47 +328,25 @@ if (isset($_GET['success'])) {
                     select.style.backgroundSize = '16px';
                     select.style.paddingRight = 'calc(var(--spacing) * 10)';
                 });
-
-                // Add loading state to submit button
-                const form = document.getElementById('login-form');
-                const submitBtn = form.querySelector('.submit-btn');
-                
-                form.addEventListener('submit', function() {
-                    submitBtn.innerHTML = `
-                        <svg style="animation: spin 1s linear infinite; display: inline-block; margin-right: 0.5rem;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 12a9 9 0 11-6.219-8.56"/>
-                        </svg>
-                        Signing In...
-                    `;
-                    submitBtn.disabled = true;
-                });
             });
         </script>
-
         <style>
             @keyframes spin {
                 from { transform: rotate(0deg); }
                 to { transform: rotate(360deg); }
             }
-            
-            /* Custom styles for login page */
             .register-form {
                 max-width: 32rem;
             }
-            
             input[type="checkbox"] {
                 width: 1rem;
                 height: 1rem;
                 border-radius: 0.25rem;
             }
-            
-            /* Hover effects for registration buttons */
             .btn:hover {
                 transform: translateY(-2px);
                 box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
             }
-            
-            /* Grid button styling */
             .btn {
                 transition: all 0.3s ease;
                 font-weight: 600;
@@ -439,17 +355,18 @@ if (isset($_GET['success'])) {
                 align-items: center;
                 justify-content: center;
             }
-            
-            /* Responsive grid for mobile */
             @media (max-width: 640px) {
                 .register-form {
                     max-width: 95%;
                 }
-                
                 div[style*="grid-template-columns"] {
                     grid-template-columns: 1fr !important;
                     gap: calc(var(--spacing) * 2) !important;
                 }
+            }
+            .success-message {
+                text-align: center;
+                font-weight: 500;
             }
         </style>
     </body>

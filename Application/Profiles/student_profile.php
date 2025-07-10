@@ -1,62 +1,57 @@
 <?php
-// Start session at the very beginning
 session_start();
-
-// Handle form submission
+require_once '../database/connection.php';
+if (!isset($_SESSION['student_id'])) {
+    header('Location: ../Authentication/login.php');
+    exit;
+}
+$conn = create_connection();
+$student_id = $_SESSION['student_id'];
+$sql = 'SELECT name, email, phone, department, academic_year FROM "Students" WHERE student_id = $1';
+$result = pg_query_params($conn, $sql, [$student_id]);
+$student = pg_fetch_assoc($result);
+$name = $student['name'] ?? '';
+$email = $student['email'] ?? '';
+$phone = $student['phone'] ?? '';
+$department = $student['department'] ?? '';
+$academic_year = $student['academic_year'] ?? '';
+$about_options = [
+    'Aspiring software developer passionate about building impactful solutions.',
+    'Enthusiastic learner with a keen interest in AI and data science.',
+    'Team player and problem solver, eager to contribute to real-world projects.',
+    'Driven by curiosity and a love for technology and innovation.',
+    'Focused on building a strong foundation in software engineering.'
+];
+$gpa_options = ['3.6', '3.8', '3.5', '3.9', '3.7'];
+$credits_options = ['90', '100', '85', '110', '95'];
+$graduation_year_options = ['2026', '2027', '2028', '2025', '2029'];
+$about = $about_options[array_rand($about_options)];
+$gpa = $gpa_options[array_rand($gpa_options)];
+$credits = $credits_options[array_rand($credits_options)];
+$graduation_year = $graduation_year_options[array_rand($graduation_year_options)];
+$success_message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Store form data in session (secure server-side storage)
-    $_SESSION['name'] = $_POST['name'] ?? '';
-    $_SESSION['email'] = $_POST['email'] ?? '';
-    $_SESSION['phone'] = $_POST['phone'] ?? '';
-    $_SESSION['department'] = $_POST['department'] ?? '';
-    $_SESSION['academic_year'] = $_POST['academic_year'] ?? '';
-    $_SESSION['about'] = $_POST['about'] ?? '';
-    $_SESSION['gpa'] = $_POST['gpa'] ?? '';
-    $_SESSION['credits'] = $_POST['credits'] ?? '';
-    $_SESSION['graduation_year'] = $_POST['graduation_year'] ?? '';
-    
-    // Set cookies for user preferences (less sensitive data)
-    setcookie('user_theme', $_POST['theme'] ?? 'default', time() + (86400 * 30)); // 30 days
-    setcookie('last_login', date('Y-m-d H:i:s'), time() + (86400 * 30));
-    setcookie('student_initials', substr($_POST['name'] ?? 'UN', 0, 2), time() + (86400 * 30));
-    
-    // Redirect to prevent form resubmission on refresh
-    header('Location: ' . $_SERVER['PHP_SELF']);
-    exit;
+    $name = trim($_POST['name'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $department = $_POST['department'] ?? '';
+    $academic_year = $_POST['academic_year'] ?? '';
+    $update_sql = 'UPDATE "Students" SET name = $1, phone = $2, department = $3, academic_year = $4 WHERE student_id = $5';
+    $update_result = pg_query_params($conn, $update_sql, [
+        $name, $phone, $department, $academic_year, $student_id
+    ]);
+    if ($update_result) {
+        $success_message = 'Profile updated successfully!';
+        $result = pg_query_params($conn, $sql, [$student_id]);
+        $student = pg_fetch_assoc($result);
+        $name = $student['name'] ?? '';
+        $phone = $student['phone'] ?? '';
+        $department = $student['department'] ?? '';
+        $academic_year = $student['academic_year'] ?? '';
+    }
 }
-
-// Handle logout
-if (isset($_GET['logout'])) {
-    // Destroy session
-    session_destroy();
-    
-    // Clear cookies by setting them to expire in the past
-    setcookie('user_theme', '', time() - 3600);
-    setcookie('last_login', '', time() - 3600);
-    setcookie('student_initials', '', time() - 3600);
-    
-    // Redirect to login page (or current page)
-    header('Location: login.php');
-    exit;
-}
-
-// Get data from session (preferred) or set defaults
-$name = $_SESSION['name'] ?? 'John Kamau';
-$email = $_SESSION['email'] ?? 'john.kamau@strathmore.edu';
-$phone = $_SESSION['phone'] ?? '+254123456789';
-$department = $_SESSION['department'] ?? 'Computer Science';
-$academic_year = $_SESSION['academic_year'] ?? '2nd Year';
-$about = $_SESSION['about'] ?? 'Computer science student at Strathmore University with a passion for AI and Machine Learning. Looking for internship opportunities to apply my technical skills and gain real-world experience in software development.';
-$gpa = $_SESSION['gpa'] ?? '3.7';
-$credits = $_SESSION['credits'] ?? '65';
-$graduation_year = $_SESSION['graduation_year'] ?? '2027';
-
-// Get data from cookies
 $user_theme = $_COOKIE['user_theme'] ?? 'default';
 $last_login = $_COOKIE['last_login'] ?? 'Never';
 $student_initials = $_COOKIE['student_initials'] ?? 'JK';
-
-// Display success message if form was submitted
 $show_success = isset($_SESSION['name']) && !empty($_SESSION['name']);
 ?>
 <!DOCTYPE html>
@@ -68,8 +63,7 @@ $show_success = isset($_SESSION['name']) && !empty($_SESSION['name']);
   <link rel="stylesheet" href="../static/css/index.css">
 </head>
 <body>
-  <!-- Aurora Background Animation -->
-  <svg class="bg-animation" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+  <svg class="bg-animation" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;opacity:0.3;" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
     <path fill="url(#aurora-gradient)" d="M0,128L60,138.7C120,149,240,171,360,154.7C480,139,600,85,720,96C840,107,960,181,1080,197.3C1200,213,1320,171,1380,149.3L1440,128L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
     <defs>
       <linearGradient id="aurora-gradient" x1="0" y1="0" x2="1" y2="1">
@@ -79,25 +73,9 @@ $show_success = isset($_SESSION['name']) && !empty($_SESSION['name']);
       </linearGradient>
     </defs>
   </svg>
-
-  <!-- Header -->
-  <header class="header">
-    <span class="brand">INTERN CONNECT</span>
-    <h1>STUDENT PROFILE</h1>
-  </header>
-
-  <!-- Navigation -->
-  <nav class="nav">
-    <a href="student_dashboard.html">Dashboard</a>
-    <a href="browse_internships.html">Browse Internships</a>
-    <a href="my_applications.html">My Applications</a>
-    <a href="student_profile.html" class="active">Profile</a>
-    <a href="?logout=1" style="margin-left: auto;">Log out</a>
-  </nav>
-
-  <!-- Main Container -->
+  <header class="header">STUDENT PROFILE</header>
+  <?php require_once '../includes/navigation.php'; echo render_navigation('profile'); ?>
   <div class="container">
-    <!-- Sidebar -->
     <aside class="sidebar">
       <div class="profile-section">
         <div class="profile-avatar"><?php echo htmlspecialchars($student_initials); ?></div>
@@ -107,26 +85,19 @@ $show_success = isset($_SESSION['name']) && !empty($_SESSION['name']);
           Strathmore University
         </div>
       </div>
-      
       <ul class="sidebar-menu">
         <li class="active">Personal Information</li>
-        <li>Academic Details</li>
-        <li>Resume & Documents</li>
-        <li>Skills & Interests</li>
+        <li>Academic Information</li>
       </ul>
     </aside>
-
-    <!-- Main Content -->
     <main class="main-content">
       <div class="content-card">
         <h2 class="content-title">Personal Information</h2>
-        
         <form method="POST" action="">
           <div class="form-group">
             <label class="form-label">Full Name</label>
             <input type="text" name="name" class="form-input" value="<?php echo htmlspecialchars($name); ?>" required>
           </div>
-          
           <div class="form-group">
             <label class="form-label">Email Address</label>
             <input type="email" name="email" class="form-input" value="<?php echo htmlspecialchars($email); ?>" readonly>
@@ -134,12 +105,10 @@ $show_success = isset($_SESSION['name']) && !empty($_SESSION['name']);
               Email cannot be changed. Contact admin if needed.
             </small>
           </div>
-          
           <div class="form-group">
             <label class="form-label">Phone Number</label>
             <input type="tel" name="phone" class="form-input" value="<?php echo htmlspecialchars($phone); ?>" required>
           </div>
-
           <div class="form-group">
             <label class="form-label">Department</label>
             <select name="department" class="form-input" required>
@@ -155,7 +124,6 @@ $show_success = isset($_SESSION['name']) && !empty($_SESSION['name']);
               <option value="Economics" <?php echo ($department === 'Economics') ? 'selected' : ''; ?>>Economics</option>
             </select>
           </div>
-
           <div class="form-group">
             <label class="form-label">Academic Year</label>
             <select name="academic_year" class="form-input" required>
@@ -169,20 +137,11 @@ $show_success = isset($_SESSION['name']) && !empty($_SESSION['name']);
               <option value="PhD" <?php echo ($academic_year === 'PhD') ? 'selected' : ''; ?>>PhD</option>
             </select>
           </div>
-          
-          <div class="form-group">
-            <label class="form-label">About Me</label>
-            <textarea name="about" class="form-textarea" rows="4" placeholder="Tell us about yourself, your interests, and career goals..."><?php echo htmlspecialchars($about); ?></textarea>
-          </div>
-          
           <button type="submit" class="save-button">Save Changes</button>
         </form>
       </div>
-
-      <!-- Academic Information Card -->
       <div class="content-card">
         <h2 class="content-title">Academic Information</h2>
-        
         <div class="stats-container">
           <div class="stat-card">
             <div class="stat-number"><?php echo htmlspecialchars($gpa); ?></div>
@@ -197,7 +156,6 @@ $show_success = isset($_SESSION['name']) && !empty($_SESSION['name']);
             <div class="stat-label">Expected Graduation</div>
           </div>
         </div>
-
         <div class="form-group">
           <label class="form-label">Key Courses Completed</label>
           <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
@@ -211,12 +169,8 @@ $show_success = isset($_SESSION['name']) && !empty($_SESSION['name']);
       </div>
     </main>
   </div>
-
-  <!-- Footer -->
   <footer class="footer">
     Intern Connect &copy; 2025 | All Rights Reserved
   </footer>
-
-
 </body>
 </html>

@@ -1,0 +1,55 @@
+# Documentation and markdown files
+*.md
+README*
+CHANGELOG*
+LICENSE*
+
+# Version control
+.git
+.gitignore
+
+# Database files (mounted as volumes)
+Database/
+
+# Archive files
+Archive/
+
+# Task files
+Tasks/
+
+# Docker files (not needed in container)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+
+# Node modules (if any)
+node_modules/
+
+# PHP specific
+vendor/
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+*.old

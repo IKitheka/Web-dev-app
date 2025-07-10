@@ -1,11 +1,8 @@
 <?php
-require_once 'connection.php';
-
+require_once '../database/connection.php';
 $success_message = '';
 $error_message = '';
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-   
     $name = trim($_POST['name']);
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
@@ -13,43 +10,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $academic_year = $_POST['academic_year'];
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
-    
     $errors = [];
-    
     if (empty($name) || empty($email) || empty($department) || empty($academic_year) || empty($password)) {
         $errors[] = "All required fields must be filled.";
     }
-  
     if (!empty($email) && !preg_match('/.*@strathmore\.edu$/', $email)) {
         $errors[] = "Please use your Strathmore University email address (@strathmore.edu).";
     }
-    
     if ($password !== $confirm_password) {
         $errors[] = "Passwords do not match.";
     }
-   
     if (strlen($password) < 8) {
         $errors[] = "Password must be at least 8 characters long.";
     }
-
     if (empty($errors)) {
         $stmt = $conn->prepare("SELECT id FROM students WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
-        
         if ($result->num_rows > 0) {
             $errors[] = "An account with this email already exists.";
         }
         $stmt->close();
     }
-  
     if (empty($errors)) {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-  
         $stmt = $conn->prepare("INSERT INTO students (name, email, phone, department, academic_year, password, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
         $stmt->bind_param("ssssss", $name, $email, $phone, $department, $academic_year, $hashed_password);
-        
         if ($stmt->execute()) {
             $success_message = "Registration successful! You can now log in.";
             $name = $email = $phone = $department = $academic_year = '';
@@ -73,7 +60,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </head>
     <body>
         <div class="container form-container">
-            <!-- SVG for the Background flowing with Aurora based colors -->
             <svg class="bg-svg" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
                 <path fill="url(#aurora-gradient)" d="M0,128L60,138.7C120,149,240,171,360,154.7C480,139,600,85,720,96C840,107,960,181,1080,197.3C1200,213,1320,171,1380,149.3L1440,128L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z"></path>
                 <defs>
@@ -84,12 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </linearGradient>
                 </defs>
             </svg>
-
             <form id="student-register-form" class="register-form" action="../database/process_student_register.php" method="post">
-                <!-- Heading for our form -->
                 <h2 class="form-heading">Student Registration</h2>
-
-                <!-- Full Name Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -104,8 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             required />
                     </div>
                 </div>
-
-                <!-- Email Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -122,8 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             required />
                     </div>
                 </div>
-
-                <!-- Phone Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -136,8 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             class="form-input" />
                     </div>
                 </div>
-
-                <!-- Department Dropdown -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -164,8 +140,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </select>
                     </div>
                 </div>
-
-                <!-- Academic Year Dropdown -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -187,8 +161,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </select>
                     </div>
                 </div>
-
-                <!-- Password Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -204,8 +176,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             required />
                     </div>
                 </div>
-
-                <!-- Confirm Password Input -->
                 <div class="input-group">
                     <div class="input-container">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
@@ -223,94 +193,66 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             required />
                     </div>
                 </div>
-
-                <!-- Register button -->
                 <div class="button-container">
                     <button type="submit" class="submit-btn">Register as Student</button>
                 </div>
-
-                <!-- Navigation Links -->
                 <div class="form-switch-container">
-                    <a class="form-switch-link" href="login.html">Already have an account? Log In</a>
+                    <a class="form-switch-link" href="login.php">Already have an account? Log In</a>
                 </div>
-
                 <div class="form-switch-container" style="margin-top: calc(var(--spacing) * 2);">
-                    <a class="form-switch-link" href="employer_register.html">Register as Employer instead</a>
+                    <a class="form-switch-link" href="employer_register.php">Register as Employer instead</a>
                 </div>
-
-                <!-- Error message -->
                 <div id="password-error" class="error-message" hidden>
                     🔒 Passwords do not match. Please try again.
                 </div>
-
                 <div id="email-error" class="error-message" hidden>
                     📧 Please use your Strathmore University email address (@strathmore.edu).
                 </div>
             </form>
         </div>
-
         <footer>
             Intern Connect  &copy; 2025
         </footer>
-
-        <!-- JavaScript for form validation -->
         <script>
             document.getElementById('student-register-form').addEventListener('submit', function(e) {
                 const password = document.querySelector('input[name="password"]').value;
                 const confirmPassword = document.querySelector('input[name="confirm_password"]').value;
                 const email = document.querySelector('input[name="email"]').value;
-                
                 const passwordError = document.getElementById('password-error');
                 const emailError = document.getElementById('email-error');
-                
                 let hasError = false;
-
-                // Reset error displays
                 passwordError.style.display = "none";
                 emailError.style.display = "none";
-
-                // Password validation
                 if (password !== confirmPassword) {
                     e.preventDefault();
                     passwordError.style.display = "block";
                     hasError = true;
-                    
                     setTimeout(() => {
                         passwordError.style.display = "none";
                     }, 5000);
                 }
-
-                // Email validation for Strathmore domain
                 if (!email.endsWith('@strathmore.edu')) {
                     e.preventDefault();
                     emailError.style.display = "block";
                     hasError = true;
-                    
                     setTimeout(() => {
                         emailError.style.display = "none";
                     }, 5000);
                 }
-
-                // If no errors, allow form submission
                 if (!hasError) {
                     passwordError.style.display = "none";
                     emailError.style.display = "none";
                 }
             });
-
-            // Real-time email validation
             document.querySelector('input[name="email"]').addEventListener('input', function(e) {
                 const email = e.target.value;
                 const emailError = document.getElementById('email-error');
-                
                 if (email && !email.endsWith('@strathmore.edu')) {
                     emailError.style.display = "block";
                 } else {
                     emailError.style.display = "none";
                 }
             });
-
-            // Style select dropdowns to match other inputs
             document.addEventListener('DOMContentLoaded', function() {
                 const selects = document.querySelectorAll('select.form-input');
                 selects.forEach(select => {
@@ -323,19 +265,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 });
             });
         </script>
-
         <style>
-            /* Additional styles for select dropdowns */
             select.form-input {
                 cursor: pointer;
             }
-
             select.form-input option {
                 background-color: var(--color-blue-900);
                 color: var(--color-white);
                 padding: calc(var(--spacing) * 2);
             }
-
             .success-message {
                 background-color: rgba(34, 197, 94, 0.1);
                 color: var(--color-cyan-300);
